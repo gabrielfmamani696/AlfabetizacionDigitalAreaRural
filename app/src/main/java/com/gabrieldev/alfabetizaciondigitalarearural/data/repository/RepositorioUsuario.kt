@@ -4,12 +4,10 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.EntidadUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.UsuarioDao
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
-
+//intermediario de datos
 class RepositorioUsuario(private val usuarioDao: UsuarioDao) {
-
     // Obtener el usuario activo (para la pantalla principal)
     val ultimoUsuario: Flow<EntidadUsuario?> = usuarioDao.obtenerUltimoUsuario()
-
     // Crear un nuevo usuario (para el Onboarding)
     suspend fun crearUsuario(nombre: String, avatarId: Int = 0) {
         val nuevoUsuario = EntidadUsuario(
