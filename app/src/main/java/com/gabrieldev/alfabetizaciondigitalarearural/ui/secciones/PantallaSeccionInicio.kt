@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.EntidadUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +69,8 @@ fun PantallaSeccionInicio(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Inclusivo.ESPACIADO_ESTANDAR),
+            contentPadding = PaddingValues(Inclusivo.ESPACIADO_ESTANDAR)
         ) {
             item {
                 Column(
@@ -82,15 +84,17 @@ fun PantallaSeccionInicio(
                         Text(
                             text = "Hola, ${usuario.alias} 👋",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = Inclusivo.TAMANO_TEXTO_TITULO
                         )
                         Text(
                             text = "¡A seguir aprendiendo!",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = Color.Gray,
+                            fontSize = Inclusivo.TAMANO_TEXTO_TITULO
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(Inclusivo.ESPACIADO_ESTANDAR))
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
                     ) {
@@ -164,7 +168,7 @@ fun PantallaSeccionInicio(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Recuerda que puedes descargar las lecciones para usarlas sin internet en la pestaña 'Lecciones'.",
+                            text = "Recuerda que puedes compartir las lecciones sin internet haciendo click en el boton de compartir",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
