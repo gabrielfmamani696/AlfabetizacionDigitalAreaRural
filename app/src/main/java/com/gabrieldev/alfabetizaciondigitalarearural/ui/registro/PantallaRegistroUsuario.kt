@@ -14,10 +14,11 @@ fun PantallaRegistroUsuario(
     repositorio: RepositorioUsuario,
     alTerminar: () -> Unit // Callback para navegar cuando termine
 ) {
-        // Estado para guardar lo que escribe el usuario
-//    guarda nombre en memoria, para q no se borre al recargar elmentos de UI, mutable es el observador
+    // Estado para guardar lo que escribe el usuario
     var nombre by remember { mutableStateOf("") }
-//    corrutina, dara un espacio para que se realice una accion que tomara su tiempo, dependiendo de que accion sea
+    // Estado para mostrar errores de validación
+    var mensajeError by remember { mutableStateOf<String?>(null) }
+    
     val scope = rememberCoroutineScope()
 
     Column(
@@ -28,35 +29,61 @@ fun PantallaRegistroUsuario(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "¡Bienvenido a tu Aventura de Alfabetizacion Digital!, para iniciar, ingresa tu nombre o un alias de al menos 4 caracteres",
+            text = "¡Bienvenido a tu Aventura de Alfabetización Digital!",
             style = MaterialTheme.typography.headlineMedium
+        )
+        Text(
+            text = "Para iniciar, ingresa tu nombre (mínimo 4 letras y/ó números).",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
             value = nombre,
-            onValueChange = { nombre = it },
+            onValueChange = { 
+                nombre = it 
+                mensajeError = null // Limpiamos el error al escribir
+            },
             label = { Text("¿Cómo te llamas?") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = mensajeError != null, // Se pone rojo si hay error
+            supportingText = {
+                if (mensajeError != null) {
+                    Text(text = mensajeError!!, color = MaterialTheme.colorScheme.error)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                if (nombre.isNotBlank() && nombre.length >= 4) {
-                    scope.launch {
-                        repositorio.crearUsuario(nombre)
-                        alTerminar() // Avisamos a la MainActivity que ya terminamos
-                    }
+                // 1. Validar longitud
+                if (nombre.length < 4) {
+                    mensajeError = "El nombre debe tener al menos 4 caracteres."
+                    return@Button
+                }
+                
+                // 2. Validar que sea alfanumérico (letras y números)
+                if (!nombre.all { it.isLetterOrDigit() }) {
+                    mensajeError = "Solo se permiten letras y números (sin espacios ni símbolos)."
+                    return@Button
+                }
+
+                // 3. Si pasa todo, guardamos
+                scope.launch {
+                    repositorio.crearUsuario(nombre)
+                    alTerminar() 
                 }
             },
-            enabled = nombre.isNotBlank(), // Se deshabilita si está vacío
+            enabled = nombre.isNotBlank(), 
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("¡Comenzar!")
         }
     }
+
 }
