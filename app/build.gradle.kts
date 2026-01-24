@@ -72,4 +72,6 @@ dependencies {
     implementation(libs.coil.compose)
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:${room_version}")
+    // Iconos extendidos (para el Rayo, etc.)
+    implementation("androidx.compose.material:material-icons-extended")
 }

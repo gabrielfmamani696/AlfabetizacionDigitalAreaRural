@@ -24,9 +24,9 @@ abstract class BaseDeDatosApp : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     BaseDeDatosApp::class.java,
-                    "alfabetizacion_rural_db" // Nombre del archivo de la BD
+                    "alfabetizacion_rural_db"
                 )
-                    .fallbackToDestructiveMigration() // Si cambiamos la BD, borra todo y empieza de cero (útil para desarrollo)
+                    .fallbackToDestructiveMigration(false)
                     .build()
 
                 INSTANCE = instance

@@ -8,7 +8,7 @@ import java.util.UUID
 class RepositorioUsuario(private val usuarioDao: UsuarioDao) {
     // Obtener el usuario activo (para la pantalla principal)
     val ultimoUsuario: Flow<EntidadUsuario?> = usuarioDao.obtenerUltimoUsuario()
-    // Crear un nuevo usuario (para el Onboarding)
+    // Crear un nuevo usuario
     suspend fun crearUsuario(nombre: String, avatarId: Int = 0) {
         val nuevoUsuario = EntidadUsuario(
             alias = nombre,
@@ -18,7 +18,6 @@ class RepositorioUsuario(private val usuarioDao: UsuarioDao) {
         usuarioDao.insertarUsuario(nuevoUsuario)
     }
 
-    // Verificar si ya existe alguien (para decidir si mostrar Onboarding o Home)
     suspend fun existeAlgunUsuario(): Boolean {
         return usuarioDao.contarUsuarios() > 0
     }
