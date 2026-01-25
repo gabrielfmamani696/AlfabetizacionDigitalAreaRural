@@ -19,10 +19,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.gabrieldev.alfabetizaciondigitalarearural.data.local.EntidadUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
-import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaLecciones
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaLecciones
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaPerfil
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaSeccionInicio
 
@@ -87,7 +87,7 @@ fun PantallaPrincipal(
                     PantallaSeccionInicio(usuario = usuario)
                 }
                 composable(Rutas.Lecciones.ruta) {
-                    PantallaLecciones()
+                    PantallaLecciones(repositorio = repositorio)
                 }
                 composable(Rutas.Perfil.ruta) {
                     PantallaPerfil()

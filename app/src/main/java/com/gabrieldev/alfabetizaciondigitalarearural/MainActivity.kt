@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.BaseDeDatosApp
@@ -18,11 +19,17 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val baseDeDatos = BaseDeDatosApp.obtenerBaseDeDatos(applicationContext)
-        val repositorio = RepositorioUsuario(baseDeDatos.usuarioDao())
-
+        val repositorio = RepositorioUsuario(
+            baseDeDatos.usuarioDao(),
+            baseDeDatos.leccionDao(),
+        )
         setContent {
+            // precarga
+            LaunchedEffect(Unit) {
+                repositorio.defaultLecciones()
+            }
             AlfabetizacionDigitalAreaRuralTheme {
-//              cambio de estado en base a presencia de usuario
+                //cambio de estado en base a presencia de usuario
                 val usuarioGuardado by repositorio.ultimoUsuario.collectAsState(initial = null)
 
                 if (usuarioGuardado != null) {

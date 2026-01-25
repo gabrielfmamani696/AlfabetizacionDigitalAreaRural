@@ -1,15 +1,16 @@
-package com.gabrieldev.alfabetizaciondigitalarearural.data.local
+package com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
 //    suspend = segudo plano/corrutina
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertarUsuario(usuario: EntidadUsuario)
 
     @Query("SELECT * FROM usuarios WHERE id_usuario = :id")

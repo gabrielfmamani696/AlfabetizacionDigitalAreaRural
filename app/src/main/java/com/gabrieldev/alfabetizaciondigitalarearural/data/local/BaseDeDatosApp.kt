@@ -4,14 +4,18 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.gabrieldev.alfabetizaciondigitalarearural.data.local.EntidadUsuario
-import com.gabrieldev.alfabetizaciondigitalarearural.data.local.UsuarioDao
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LeccionDao
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.UsuarioDao
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
 
-@Database(entities = [EntidadUsuario::class], version = 1, exportSchema = false)
+@Database(entities = [EntidadUsuario::class, EntidadLeccion::class], version = 2, exportSchema = false)
 abstract class BaseDeDatosApp : RoomDatabase() {
-//implememntar dao
+    //implememntar dao
     abstract fun usuarioDao(): UsuarioDao
-// singleton
+    abstract fun leccionDao(): LeccionDao
+
+    // singleton
     companion object {
         @Volatile
         private var INSTANCE: BaseDeDatosApp? = null
@@ -20,7 +24,7 @@ abstract class BaseDeDatosApp : RoomDatabase() {
             // Si ya existe, la retornamos
             return INSTANCE ?: synchronized(this)
             {
-                // Si no, la creamos
+                // Sino la creamos
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     BaseDeDatosApp::class.java,
