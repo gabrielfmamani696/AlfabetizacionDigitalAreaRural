@@ -31,8 +31,4 @@ interface CuestionarioDao {
 
     @Query("SELECT * FROM respuestas WHERE id_pregunta = :preguntaId")
     suspend fun obtenerRespuestasPorPregunta(preguntaId: Int): List<EntidadRespuesta>
-
-    @Query("SELECT COUNT(*) FROM cuestionarios WHERE id_leccion = :leccionId")
-    suspend fun totalCuestionariosPorLeccion(leccionId: Int): Int
-
 }

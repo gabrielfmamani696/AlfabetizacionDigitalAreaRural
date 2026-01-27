@@ -126,7 +126,6 @@ class RepositorioUsuario(
         val cuestionarios = cuestionarioDao.obtenerCuestionariosPorLeccion(idLeccion)
         if (cuestionarios.isEmpty()) return null
 
-        // Tomamos un cuestionario aleatorio de los encontrados para la lección
         val cuestionario = cuestionarios.random()
         val preguntas = cuestionarioDao.obtenerPreguntasPorCuestionario(cuestionario.idCuestionario)
         
@@ -142,21 +141,15 @@ class RepositorioUsuario(
         intentoLeccionDao.insertarIntento(intento)
     }
 
-    suspend fun totalCuestionariosPorLeccion(idLeccion: Int): Int {
-        return cuestionarioDao.totalCuestionariosPorLeccion(idLeccion)
-    }
-
     suspend fun defaultCuestionarios() {
         val cuestionariosExistentes = cuestionarioDao.obtenerCuestionariosPorLeccion(1)
         if (cuestionariosExistentes.isEmpty()) {
-            // Creamos un cuestionario
             val cuestionario = EntidadCuestionario(
                 idLeccion = 1,
                 tituloQuiz = "Evaluación: Encender la Computadora"
             )
             val idCuestionario = cuestionarioDao.insertarCuestionario(cuestionario).toInt()
 
-            // Pregunta 1
             val p1 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "¿Cuál es el primer paso para encender la computadora?"
@@ -168,7 +161,6 @@ class RepositorioUsuario(
                 com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP1, textoOpcion = "Mover el ratón", esCorrecta = false)
             ))
 
-            // Pregunta 2
             val p2 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "¿Qué símbolo suele tener el botón de encendido?"
@@ -179,8 +171,7 @@ class RepositorioUsuario(
                 com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP2, textoOpcion = "Un círculo atravesado por una línea (⏻)", esCorrecta = true),
                 com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP2, textoOpcion = "Una estrella", esCorrecta = false)
             ))
-            
-             // Pregunta 3
+
             val p3 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "Después de presionar el botón, ¿qué debes hacer?"
@@ -194,7 +185,6 @@ class RepositorioUsuario(
         }
     }
 }
-//datos estructurados
 data class ExamenConPreguntas(
     val cuestionario: EntidadCuestionario,
     val preguntas: List<PreguntaConRespuestas>

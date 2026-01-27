@@ -88,7 +88,6 @@ fun PantallaSeccionInicio(
                 }
             }
         }
-
         // Logro
         item {
             Card(
@@ -125,7 +124,6 @@ fun PantallaSeccionInicio(
                 }
             }
         }
-        //Tip del día
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
