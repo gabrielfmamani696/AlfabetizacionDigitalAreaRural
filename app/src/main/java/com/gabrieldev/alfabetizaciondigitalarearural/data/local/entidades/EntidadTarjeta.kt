@@ -31,8 +31,8 @@ data class EntidadTarjeta(
     val contenidoTexto: String,
 
     @ColumnInfo(name = "tipo_fondo")
-    val tipoFondo: String, // "COLOR_SOLIDO" o "SVG"
+    val tipoFondo: String, // "COLOR_SOLIDO", "SVG", o "IMAGEN"
 
     @ColumnInfo(name = "data_fondo")
-    val dataFondo: String // Hex del color o Path del SVG
+    val dataFondo: String // Hex del color, Path del SVG, o nombre del drawable
 )

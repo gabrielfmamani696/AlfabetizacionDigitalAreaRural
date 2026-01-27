@@ -22,11 +22,16 @@ class MainActivity : ComponentActivity() {
         val repositorio = RepositorioUsuario(
             baseDeDatos.usuarioDao(),
             baseDeDatos.leccionDao(),
+            baseDeDatos.tarjetaDao(),
+            baseDeDatos.cuestionarioDao(),
+            baseDeDatos.intentoLeccionDao()
         )
         setContent {
             // precarga
             LaunchedEffect(Unit) {
                 repositorio.defaultLecciones()
+                repositorio.defaultTarjetas()
+                repositorio.defaultCuestionarios()
             }
             AlfabetizacionDigitalAreaRuralTheme {
                 //cambio de estado en base a presencia de usuario

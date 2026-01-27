@@ -11,7 +11,7 @@ composeBom = "2024.09.00"
 #ibrerias
 navigationCompose = "2.8.0"
 coil = "2.7.0"
-ksp = "2.0.21-1.0.27" # Congruente con la version de kotlin
+ksp = "2.0.21-1.0.27"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

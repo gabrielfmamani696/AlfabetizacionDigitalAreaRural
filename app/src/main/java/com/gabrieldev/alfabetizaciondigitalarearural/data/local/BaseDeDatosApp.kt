@@ -49,7 +49,7 @@ abstract class BaseDeDatosApp : RoomDatabase() {
                     BaseDeDatosApp::class.java,
                     "alfabetizacion_rural_db"
                 )
-                    .fallbackToDestructiveMigration(false)
+                    .fallbackToDestructiveMigration()
                     .build()
 
                 INSTANCE = instance

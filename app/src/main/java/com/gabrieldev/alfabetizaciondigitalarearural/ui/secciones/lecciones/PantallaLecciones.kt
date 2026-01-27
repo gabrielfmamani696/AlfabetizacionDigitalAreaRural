@@ -32,13 +32,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
 
 @Composable
 fun PantallaLecciones(
-    repositorio: RepositorioUsuario
+    repositorio: RepositorioUsuario,
+    navController: NavController,
 ) {
     // Estado para la búsqueda
     var textoBusqueda by remember { mutableStateOf("") }
@@ -80,7 +83,7 @@ fun PantallaLecciones(
                 FloatingActionButton(
                     onClick = { /* TODO: Navegar a pantalla de crear lección */ },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(56.dp) // Tamaño estándar para alinear con el TextField
+                    modifier = Modifier.size(56.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Crear nueva lección")
                 }
@@ -101,7 +104,9 @@ fun PantallaLecciones(
                     items(leccionesFiltradas) { leccion ->
                         ItemLeccion(
                             leccion = leccion,
-                            onClick = { /* TODO: Ir al detalle */ },
+                            onClick = {
+                                navController.navigate(Rutas.VisualizarTarjetas.crearRuta(leccion.idLeccion))
+                            },
                             onBorrar = { /* TODO: Borrar */ }
                         )
                     }

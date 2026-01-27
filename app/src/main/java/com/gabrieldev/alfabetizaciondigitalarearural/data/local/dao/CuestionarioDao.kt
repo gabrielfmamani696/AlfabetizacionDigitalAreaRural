@@ -12,13 +12,16 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.Entida
 @Dao
 interface CuestionarioDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarCuestionario(cuestionario: EntidadCuestionario)
+    suspend fun insertarCuestionario(cuestionario: EntidadCuestionario): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarPregunta(pregunta: EntidadPregunta)
+    suspend fun insertarPregunta(pregunta: EntidadPregunta): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarRespuesta(respuesta: EntidadRespuesta)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertarRespuestas(respuestas: List<EntidadRespuesta>)
 
     @Query("SELECT * FROM cuestionarios WHERE id_leccion = :leccionId")
     suspend fun obtenerCuestionariosPorLeccion(leccionId: Int): List<EntidadCuestionario>
@@ -28,4 +31,8 @@ interface CuestionarioDao {
 
     @Query("SELECT * FROM respuestas WHERE id_pregunta = :preguntaId")
     suspend fun obtenerRespuestasPorPregunta(preguntaId: Int): List<EntidadRespuesta>
+
+    @Query("SELECT COUNT(*) FROM cuestionarios WHERE id_leccion = :leccionId")
+    suspend fun totalCuestionariosPorLeccion(leccionId: Int): Int
+
 }
