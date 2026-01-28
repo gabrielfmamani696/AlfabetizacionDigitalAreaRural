@@ -21,8 +21,10 @@ class RepositorioApp(
     private val cuestionarioDao: CuestionarioDao,
     private val intentoLeccionDao: IntentoLeccionDao,
     ) {
+
     // Obtener el usuario activo (para la pantalla principal)
     val ultimoUsuario: Flow<EntidadUsuario?> = usuarioDao.obtenerUltimoUsuario()
+
     // Crear un nuevo usuario
     suspend fun crearUsuario(nombre: String, avatarId: Int = 0) {
         val nuevoUsuario = EntidadUsuario(
@@ -32,12 +34,15 @@ class RepositorioApp(
         )
         usuarioDao.insertarUsuario(nuevoUsuario)
     }
+
     suspend fun existeAlgunUsuario(): Boolean {
         return usuarioDao.contarUsuarios() > 0
     }
+
     suspend fun obtenerLecciones(): List<EntidadLeccion> {
         return leccionDao.consultarLecciones()
     }
+
     suspend fun defaultLecciones() {
         val lecciones = obtenerLecciones()
         if(lecciones.isEmpty()){
@@ -182,6 +187,33 @@ class RepositorioApp(
                 com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP3, textoOpcion = "Desconectar el cable", esCorrecta = false),
                 com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP3, textoOpcion = "Esperar a que el sistema inicie", esCorrecta = true)
             ))
+        }
+    }
+
+    suspend fun insertarLeccion(leccion: EntidadLeccion): Long {
+        return leccionDao.insertarLeccion(leccion)
+    }
+
+    suspend fun insertarTarjeta(tarjeta: EntidadTarjeta): Long {
+        return tarjetaDao.insertarTarjeta(tarjeta);
+    }
+
+    suspend fun insertarCuestionarioCompleto(
+        cuestionario: EntidadCuestionario,
+        preguntas: List<PreguntaConRespuestas>
+    ) {
+        // 1. Insertamos el cuestionario (Header)
+        val idCuestionario = cuestionarioDao.insertarCuestionario(cuestionario).toInt()
+        
+        // 2. Iteramos por cada pregunta
+        preguntas.forEach { p ->
+            // Vinculamos la pregunta al cuestionario creado
+            val preguntaParaInsertar = p.pregunta.copy(idCuestionario = idCuestionario)
+            val idPregunta = cuestionarioDao.insertarPregunta(preguntaParaInsertar).toInt()
+            
+            // 3. Vinculamos las respuestas a esa pregunta
+            val respuestasParaInsertar = p.respuestas.map { it.copy(idPregunta = idPregunta) }
+            cuestionarioDao.insertarRespuestas(respuestasParaInsertar)
         }
     }
 }

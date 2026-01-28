@@ -11,9 +11,10 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.Entida
 @Dao
 interface LeccionDao {
 
-    //crear leccion
+    //crear leccion, devuelve el id que se ha generado, util para insercion de las
+    //demas entidades
     @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insertarLeccion(leccion: EntidadLeccion)
+    suspend fun insertarLeccion(leccion: EntidadLeccion): Long
 
     //consultar/leer lecciones
     @Query("SELECT * FROM lecciones ORDER BY fecha_creacion")

@@ -30,6 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels.CuestionarioViewModel
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels.CuestionarioViewModelFactory
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels.EstadoCuestionario
 
 @Composable
 fun PantallaCuestionario(

@@ -1,4 +1,4 @@
-package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
+package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

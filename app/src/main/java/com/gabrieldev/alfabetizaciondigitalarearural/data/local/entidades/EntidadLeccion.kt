@@ -30,5 +30,5 @@ data class EntidadLeccion(
     val uuidAutorOriginal: String,
 
     @ColumnInfo(name = "imagen_url")
-    val imagenUrl: String,
+    val imagenUrl: String?,
 )
