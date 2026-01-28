@@ -3,7 +3,6 @@ package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,13 +33,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
 
 @Composable
 fun PantallaLecciones(
-    repositorio: RepositorioUsuario,
+    repositorio: RepositorioApp,
     navController: NavController,
 ) {
     // Estado para la búsqueda
@@ -105,7 +104,7 @@ fun PantallaLecciones(
                         ItemLeccion(
                             leccion = leccion,
                             onClick = {
-                                navController.navigate(Rutas.VisualizarTarjetas.crearRuta(leccion.idLeccion))
+                                    navController.navigate(Rutas.VisualizarTarjetas.crearRuta(leccion.idLeccion))
                             },
                             onBorrar = { /* TODO: Borrar */ }
                         )

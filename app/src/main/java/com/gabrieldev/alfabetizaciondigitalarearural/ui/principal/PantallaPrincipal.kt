@@ -22,17 +22,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
-import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaLecciones
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaPerfil
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaSeccionInicio
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.CarruselTarjetas
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaLecciones
 
 @Composable
 fun PantallaPrincipal(
     usuario: EntidadUsuario,
-    repositorio: RepositorioUsuario
+    repositorio: RepositorioApp
 ) {
     val navController = rememberNavController()
     // Para saber qué botón destcar, observamos la ruta actual

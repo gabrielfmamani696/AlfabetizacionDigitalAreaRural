@@ -8,6 +8,7 @@ sealed class Rutas(val ruta: String) {
 
     object VisualizarTarjetas:
         Rutas("visualizar_tarjetas/{idLeccion}") {
+        //redirigido a PantallaPrincipal
         fun crearRuta(idLeccion: Int) = "visualizar_tarjetas/$idLeccion"
     }
 }

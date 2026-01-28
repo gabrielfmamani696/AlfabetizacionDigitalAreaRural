@@ -1,8 +1,10 @@
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -12,73 +14,93 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
-import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
 
 @Composable
 fun ComponenteTarjeta(
-    tarjeta: EntidadTarjeta,
-    modifier: Modifier = Modifier
-) {
-    Card (
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+    tarjeta: EntidadTarjeta
+    ) {
+    Card(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Fondo
             when (tarjeta.tipoFondo) {
                 "COLOR_SOLIDO" -> {
+                    val color = try {
+                        Color(android.graphics.Color.parseColor(tarjeta.dataFondo))
+                    } catch (e: Exception) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(obtenerColorSolido(tarjeta.dataFondo))
+                            .background(color)
                     )
                 }
-                "SVG", "IMAGEN" -> {
-                    AsyncImage(
-                        model = tarjeta.dataFondo,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                "IMAGEN" -> {
+                    val context = LocalContext.current
+                    val resId = context.resources.getIdentifier(
+                        tarjeta.dataFondo,
+                        "drawable",
+                        context.packageName
                     )
+                    if (resId != 0) {
+                        Image(
+                            painter = painterResource(id = resId),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.3f))
+                        )
+                    } else {
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text("Imagen no encontrada: ${tarjeta.dataFondo}", modifier = Modifier.align(Alignment.Center))
+                        }
+                    }
                 }
                 else -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     )
                 }
             }
 
-            Text(
-                text = tarjeta.contenidoTexto,
-                style = MaterialTheme.typography.headlineMedium,
-                fontSize = Inclusivo.TAMANO_TEXTO_TITULO,
-                textAlign = TextAlign.Center,
-                color = Color.White,
+            Column(
                 modifier = Modifier
-                    .padding(24.dp)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(16.dp)
-            )
+                    .align(Alignment.Center)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = tarjeta.contenidoTexto,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = if (tarjeta.tipoFondo == "COLOR_SOLIDO" || tarjeta.tipoFondo == "IMAGEN")
+                        Color.White
+                    else Color.Black,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
-    }
-}
-
-private fun obtenerColorSolido(colorHex: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(colorHex))
-    } catch (e: Exception) {
-        Color.Gray
     }
 }

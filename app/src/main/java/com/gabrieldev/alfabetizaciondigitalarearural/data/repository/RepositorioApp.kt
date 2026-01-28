@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 //intermediario de datos
-class RepositorioUsuario(
+class RepositorioApp(
     private val usuarioDao: UsuarioDao,
     private val leccionDao: LeccionDao,
     private val tarjetaDao: TarjetaDao,
@@ -122,7 +122,7 @@ class RepositorioUsuario(
         return tarjetaDao.obtenerTarjetasPorLeccion(idLeccion)
     }
 
-    suspend fun obtenerCuestionarioAleatorio(idLeccion: Int): ExamenConPreguntas? {
+    suspend fun obtenerCuestionarioAleatorio(idLeccion: Int): CuestionarioConPreguntas? {
         val cuestionarios = cuestionarioDao.obtenerCuestionariosPorLeccion(idLeccion)
         if (cuestionarios.isEmpty()) return null
 
@@ -134,7 +134,7 @@ class RepositorioUsuario(
             PreguntaConRespuestas(pregunta, respuestas)
         }
 
-        return ExamenConPreguntas(cuestionario, preguntasConRespuestas)
+        return CuestionarioConPreguntas(cuestionario, preguntasConRespuestas)
     }
 
     suspend fun insertarIntento(intento: EntidadIntentoLeccion) {
@@ -185,7 +185,7 @@ class RepositorioUsuario(
         }
     }
 }
-data class ExamenConPreguntas(
+data class CuestionarioConPreguntas(
     val cuestionario: EntidadCuestionario,
     val preguntas: List<PreguntaConRespuestas>
 )

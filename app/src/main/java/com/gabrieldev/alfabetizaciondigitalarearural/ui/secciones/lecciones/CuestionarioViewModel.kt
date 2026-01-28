@@ -4,21 +4,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadIntentoLeccion
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.ExamenConPreguntas
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.CuestionarioConPreguntas
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-class ExamenViewModel(
-    private val repositorio: RepositorioUsuario,
+class CuestionarioViewModel(
+    private val repositorio: RepositorioApp,
     private val idLeccion: Int,
     private val idUsuario: Int
 ) : ViewModel() {
-    // guarda el estado del examen, respuesta y el indice de la pregunta actual
-    private val _estadoExamen = MutableStateFlow<EstadoExamen>(EstadoExamen.Cargando)
-    val estadoExamen = _estadoExamen.asStateFlow()
+    // guarda el estado del cuestionario, respuesta y el indice de la pregunta actual
+    private val _estadoCuestionario = MutableStateFlow<EstadoCuestionario>(EstadoCuestionario.Cargando)
+    val estadoCuestionario = _estadoCuestionario.asStateFlow()
 
     private val _respuestasUsuario = MutableStateFlow<Map<Int, Int>>(emptyMap())
     val respuestasUsuario = _respuestasUsuario.asStateFlow()
@@ -27,16 +27,16 @@ class ExamenViewModel(
     val indicePreguntaActual = _indicePreguntaActual.asStateFlow()
 
     init {
-        cargarExamen()
+        cargarCuestionario()
     }
 
-    private fun cargarExamen() {
+    private fun cargarCuestionario() {
         viewModelScope.launch {
-            val examen = repositorio.obtenerCuestionarioAleatorio(idLeccion)
-            if (examen != null && examen.preguntas.isNotEmpty()) {
-                _estadoExamen.value = EstadoExamen.ExamenActivo(examen)
+            val cuestionario = repositorio.obtenerCuestionarioAleatorio(idLeccion)
+            if (cuestionario != null && cuestionario.preguntas.isNotEmpty()) {
+                _estadoCuestionario.value = EstadoCuestionario.CuestionarioActivo(cuestionario)
             } else {
-                _estadoExamen.value = EstadoExamen.Error("No hay examen para esta lección")
+                _estadoCuestionario.value = EstadoCuestionario.Error("No hay cuestionario para esta lección")
             }
         }
     }
@@ -49,8 +49,8 @@ class ExamenViewModel(
     }
 
     fun siguientePregunta() {
-        val estado = _estadoExamen.value
-        if (estado is EstadoExamen.ExamenActivo) {
+        val estado = _estadoCuestionario.value
+        if (estado is EstadoCuestionario.CuestionarioActivo) {
             val totalPreguntas = estado.datos.preguntas.size
             if (_indicePreguntaActual.value < totalPreguntas - 1) {
                 _indicePreguntaActual.value += 1
@@ -64,9 +64,9 @@ class ExamenViewModel(
         }
     }
 
-    fun finalizarExamen() {
-        val estado = _estadoExamen.value
-        if (estado is EstadoExamen.ExamenActivo) {
+    fun finalizarCuestionario() {
+        val estado = _estadoCuestionario.value
+        if (estado is EstadoCuestionario.CuestionarioActivo) {
             viewModelScope.launch {
                 val preguntas = estado.datos.preguntas
                 var puntajeTotal = 0
@@ -92,30 +92,30 @@ class ExamenViewModel(
                 )
                 repositorio.insertarIntento(intento)
 
-                _estadoExamen.value = EstadoExamen.Finalizado(calificacionFinal, aprobacion)
+                _estadoCuestionario.value = EstadoCuestionario.Finalizado(calificacionFinal, aprobacion)
             }
         }
     }
 }
 
-sealed class EstadoExamen {
-    //Estados de examen definidos en base a
-    // la presencia de los atributos del objeto ExamenConPreguntas
-    object Cargando : EstadoExamen()
-    data class ExamenActivo(val datos: ExamenConPreguntas) : EstadoExamen()
-    data class Finalizado(val nota: Int, val aprobado: Boolean) : EstadoExamen()
-    data class Error(val mensaje: String) : EstadoExamen()
+sealed class EstadoCuestionario {
+    //Estados de cuestionario definidos en base a
+    // la presencia de los atributos del objeto CuestionarioConPreguntas
+    object Cargando : EstadoCuestionario()
+    data class CuestionarioActivo(val datos: CuestionarioConPreguntas) : EstadoCuestionario()
+    data class Finalizado(val nota: Int, val aprobado: Boolean) : EstadoCuestionario()
+    data class Error(val mensaje: String) : EstadoCuestionario()
 }
 
-class ExamenViewModelFactory(
-    private val repositorio: RepositorioUsuario,
+class CuestionarioViewModelFactory(
+    private val repositorio: RepositorioApp,
     private val idLeccion: Int,
     private val idUsuario: Int
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ExamenViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(CuestionarioViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ExamenViewModel(repositorio, idLeccion, idUsuario) as T
+            return CuestionarioViewModel(repositorio, idLeccion, idUsuario) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

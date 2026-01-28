@@ -12,7 +12,7 @@ import androidx.room.PrimaryKey
             entity = EntidadUsuario::class,
             parentColumns = ["id_usuario"],
             childColumns = ["id_usuario"],
-            onDelete = ForeignKey.CASCADE   // 4. Si se borra al usuario se borra al intento
+            onDelete = ForeignKey.CASCADE   // Si se borra al usuario se borra al intento
         ),
         ForeignKey(
             entity = EntidadLeccion::class,

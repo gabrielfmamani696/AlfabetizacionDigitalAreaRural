@@ -8,7 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.BaseDeDatosApp
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.principal.PantallaPrincipal
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.registro.PantallaRegistroUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.theme.AlfabetizacionDigitalAreaRuralTheme
@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val baseDeDatos = BaseDeDatosApp.obtenerBaseDeDatos(applicationContext)
-        val repositorio = RepositorioUsuario(
+        val repositorio = RepositorioApp(
             baseDeDatos.usuarioDao(),
             baseDeDatos.leccionDao(),
             baseDeDatos.tarjetaDao(),

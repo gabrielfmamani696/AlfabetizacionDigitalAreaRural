@@ -1,27 +1,48 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 
 @Composable
-fun PantallaExamen(
+fun PantallaCuestionario(
     idLeccion: Int,
     idUsuario: Int,
-    repositorio: RepositorioUsuario,
+    repositorio: RepositorioApp,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: ExamenViewModel = viewModel(
-        factory = ExamenViewModelFactory(repositorio, idLeccion, idUsuario)
+    val viewModel: CuestionarioViewModel = viewModel(
+        factory = CuestionarioViewModelFactory(repositorio, idLeccion, idUsuario)
     )
     // variables de estado
-    val estado by viewModel.estadoExamen.collectAsState()
+    val estado by viewModel.estadoCuestionario.collectAsState()
     val indiceActual by viewModel.indicePreguntaActual.collectAsState()
     val respuestas by viewModel.respuestasUsuario.collectAsState()
 
@@ -39,9 +60,9 @@ fun PantallaExamen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             when (val st = estado) {
-                is EstadoExamen.Cargando -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                is EstadoExamen.Error -> Text("Error: ${st.mensaje}", Modifier.align(Alignment.Center))
-                is EstadoExamen.Finalizado -> {
+                is EstadoCuestionario.Cargando -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                is EstadoCuestionario.Error -> Text("Error: ${st.mensaje}", Modifier.align(Alignment.Center))
+                is EstadoCuestionario.Finalizado -> {
                     Column(
                         Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -58,7 +79,7 @@ fun PantallaExamen(
                         Button(onClick = onNavigateBack) { Text("Volver a Lecciones") }
                     }
                 }
-                is EstadoExamen.ExamenActivo -> {
+                is EstadoCuestionario.CuestionarioActivo -> {
                     val preguntaActual = st.datos.preguntas[indiceActual]
                     Column(Modifier.padding(16.dp)) {
                         LinearProgressIndicator(
@@ -76,7 +97,6 @@ fun PantallaExamen(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Spacer(Modifier.height(24.dp))
-                        
                         // Opciones
                         Column {
                             preguntaActual.respuestas.forEach { respuesta ->
@@ -110,18 +130,15 @@ fun PantallaExamen(
                                 }
                             }
                         }
-
                         Spacer(Modifier.weight(1f))
-
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             if (indiceActual > 0) {
                                 OutlinedButton(onClick = { viewModel.anteriorPregunta() }) { Text("Anterior") }
                             } else { Spacer(Modifier.width(1.dp)) }
-
                             if (indiceActual < st.datos.preguntas.size - 1) {
                                 Button(onClick = { viewModel.siguientePregunta() }) { Text("Siguiente") }
                             } else {
-                                Button(onClick = { viewModel.finalizarExamen() }) { Text("Finalizar") }
+                                Button(onClick = { viewModel.finalizarCuestionario() }) { Text("Finalizar") }
                             }
                         }
                     }
