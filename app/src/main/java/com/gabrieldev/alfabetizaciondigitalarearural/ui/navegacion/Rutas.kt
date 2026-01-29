@@ -11,4 +11,6 @@ sealed class Rutas(val ruta: String) {
         //redirigido a PantallaPrincipal
         fun crearRuta(idLeccion: Int) = "visualizar_tarjetas/$idLeccion"
     }
+
+    object CrearLeccion : Rutas("crear_leccion")
 }

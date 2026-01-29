@@ -202,10 +202,8 @@ class RepositorioApp(
         cuestionario: EntidadCuestionario,
         preguntas: List<PreguntaConRespuestas>
     ) {
-        // 1. Insertamos el cuestionario (Header)
         val idCuestionario = cuestionarioDao.insertarCuestionario(cuestionario).toInt()
-        
-        // 2. Iteramos por cada pregunta
+
         preguntas.forEach { p ->
             // Vinculamos la pregunta al cuestionario creado
             val preguntaParaInsertar = p.pregunta.copy(idCuestionario = idCuestionario)

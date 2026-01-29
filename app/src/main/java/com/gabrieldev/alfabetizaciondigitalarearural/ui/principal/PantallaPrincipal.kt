@@ -109,6 +109,12 @@ fun PantallaPrincipal(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
+                composable(Rutas.CrearLeccion.ruta) {
+                    com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaCrearLeccion(
+                        repositorio = repositorio,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
             }
         }
     }

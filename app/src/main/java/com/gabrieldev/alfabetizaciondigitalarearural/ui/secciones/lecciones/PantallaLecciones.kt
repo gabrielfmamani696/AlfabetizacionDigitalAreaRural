@@ -80,7 +80,7 @@ fun PantallaLecciones(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 FloatingActionButton(
-                    onClick = { /* TODO: Navegar a pantalla de crear lección */ },
+                    onClick = { navController.navigate(Rutas.CrearLeccion.ruta) },
                     containerColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(56.dp)
                 ) {

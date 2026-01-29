@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadCuestionario
-import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadIntentoLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+//mantiene el estado de los datos pese a cambios en la pantalla
 class CrearLeccionViewModel(
     private val repositorio: RepositorioApp
 ): ViewModel() {
@@ -28,17 +28,20 @@ class CrearLeccionViewModel(
     private val _tema = MutableStateFlow("")
     val tema = _tema.asStateFlow()
 
+    private val _tituloCuestionario = MutableStateFlow("")
+    val tituloCuestionario = _tituloCuestionario.asStateFlow()
+
     private val _listaTarjetas = MutableStateFlow<List<EntidadTarjeta>>(emptyList())
-    private val listaTarjetas = _listaTarjetas.asStateFlow()
+    val listaTarjetas = _listaTarjetas.asStateFlow()
 
     private val _mensajeUsuario = MutableStateFlow<String?>(null)
-    private val mensajeUsuario = _mensajeUsuario.asStateFlow()
+    val mensajeUsuario = _mensajeUsuario.asStateFlow()
 
     private val _navegarAtras = MutableStateFlow(false)
-    private val navegarAtras = _navegarAtras.asStateFlow()
+    val navegarAtras = _navegarAtras.asStateFlow()
 
     private val _listaPreguntas = MutableStateFlow<List<PreguntaConRespuestas>>(emptyList())
-    private val listaPreguntas = _listaPreguntas.asStateFlow()
+    val listaPreguntas = _listaPreguntas.asStateFlow()
 
     //escritura del usuario
     fun actualizarTitulo(nuevoTitulo: String) {
@@ -47,6 +50,10 @@ class CrearLeccionViewModel(
 
     fun actualizarTema(nuevoTema: String) {
         _tema.value = nuevoTema
+    }
+
+    fun actualizarTituloCuestionario(nuevo: String) {
+        _tituloCuestionario.value = nuevo
     }
 
     fun agregarTarjeta(
@@ -121,9 +128,12 @@ class CrearLeccionViewModel(
                 }
 
                 if(_listaPreguntas.value.isNotEmpty()){
+
+                    val tituloFinal = _tituloCuestionario.value.ifBlank { "Cuestionario: ${_titulo.value}" }
+
                     val nuevoCuestionario: EntidadCuestionario = EntidadCuestionario(
                         idLeccion = idLeccionGenerado.toInt(),
-                        tituloQuiz = "Cuestionario: ${nuevaLeccion.titulo}"
+                        tituloQuiz = tituloFinal
                     )
 
                     repositorio.insertarCuestionarioCompleto(
@@ -148,7 +158,7 @@ class CrearLeccionViewModel(
     fun agregarPregunta(
         enunciado: String,
         respuestas: List<EntidadRespuesta>
-        ) {
+    ) {
 
         val nuevaPregunta: EntidadPregunta = EntidadPregunta(
             idCuestionario = 0,
@@ -167,7 +177,6 @@ class CrearLeccionViewModel(
             _listaPreguntas.value = listaMutable
         }
     }
-
 
     // Segundo Constructor, Android lo maneja
     class CrearLeccionViewModelFactory(
