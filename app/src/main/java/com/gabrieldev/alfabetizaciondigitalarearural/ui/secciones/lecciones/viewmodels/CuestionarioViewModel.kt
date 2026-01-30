@@ -30,6 +30,7 @@ class CuestionarioViewModel(
         cargarCuestionario()
     }
 
+    // carga aleatoria de cuestionario
     private fun cargarCuestionario() {
         viewModelScope.launch {
             val cuestionario = repositorio.obtenerCuestionarioAleatorio(idLeccion)

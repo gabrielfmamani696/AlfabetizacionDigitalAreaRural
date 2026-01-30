@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
 
 @Dao
@@ -16,4 +17,9 @@ interface TarjetaDao {
 
     @Query("SELECT * FROM tarjetas WHERE id_leccion = :leccionId ORDER BY orden_secuencia ASC")
     suspend fun obtenerTarjetasPorLeccion(leccionId: Int): List<EntidadTarjeta>
+
+    //efecto cascada
+    @Query("DELETE FROM tarjetas WHERE id_leccion = :idLeccion")
+    suspend fun eliminarTarjetasDeLeccion(idLeccion: Int)
+
 }

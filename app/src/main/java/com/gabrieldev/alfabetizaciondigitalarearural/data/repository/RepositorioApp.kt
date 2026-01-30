@@ -8,6 +8,8 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.UsuarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadCuestionario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadIntentoLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import kotlinx.coroutines.flow.Flow
@@ -155,37 +157,37 @@ class RepositorioApp(
             )
             val idCuestionario = cuestionarioDao.insertarCuestionario(cuestionario).toInt()
 
-            val p1 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
+            val p1 = EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "¿Cuál es el primer paso para encender la computadora?"
             )
             val idP1 = cuestionarioDao.insertarPregunta(p1).toInt()
             cuestionarioDao.insertarRespuestas(listOf(
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP1, textoOpcion = "Presionar el botón de la pantalla", esCorrecta = false),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP1, textoOpcion = "Buscar y presionar el botón de encendido", esCorrecta = true),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP1, textoOpcion = "Mover el ratón", esCorrecta = false)
+                EntidadRespuesta(idPregunta = idP1, textoOpcion = "Presionar el botón de la pantalla", esCorrecta = false),
+                EntidadRespuesta(idPregunta = idP1, textoOpcion = "Buscar y presionar el botón de encendido", esCorrecta = true),
+                EntidadRespuesta(idPregunta = idP1, textoOpcion = "Mover el ratón", esCorrecta = false)
             ))
 
-            val p2 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
+            val p2 = EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "¿Qué símbolo suele tener el botón de encendido?"
             )
             val idP2 = cuestionarioDao.insertarPregunta(p2).toInt()
             cuestionarioDao.insertarRespuestas(listOf(
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP2, textoOpcion = "Un triángulo", esCorrecta = false),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP2, textoOpcion = "Un círculo atravesado por una línea (⏻)", esCorrecta = true),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP2, textoOpcion = "Una estrella", esCorrecta = false)
+                EntidadRespuesta(idPregunta = idP2, textoOpcion = "Un triángulo", esCorrecta = false),
+                EntidadRespuesta(idPregunta = idP2, textoOpcion = "Un círculo atravesado por una línea (⏻)", esCorrecta = true),
+                EntidadRespuesta(idPregunta = idP2, textoOpcion = "Una estrella", esCorrecta = false)
             ))
 
-            val p3 = com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta(
+            val p3 = EntidadPregunta(
                 idCuestionario = idCuestionario,
                 enunciado = "Después de presionar el botón, ¿qué debes hacer?"
             )
             val idP3 = cuestionarioDao.insertarPregunta(p3).toInt()
             cuestionarioDao.insertarRespuestas(listOf(
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP3, textoOpcion = "Presionarlo muchas veces rápido", esCorrecta = false),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP3, textoOpcion = "Desconectar el cable", esCorrecta = false),
-                com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta(idPregunta = idP3, textoOpcion = "Esperar a que el sistema inicie", esCorrecta = true)
+                EntidadRespuesta(idPregunta = idP3, textoOpcion = "Presionarlo muchas veces rápido", esCorrecta = false),
+                EntidadRespuesta(idPregunta = idP3, textoOpcion = "Desconectar el cable", esCorrecta = false),
+                EntidadRespuesta(idPregunta = idP3, textoOpcion = "Esperar a que el sistema inicie", esCorrecta = true)
             ))
         }
     }
@@ -221,6 +223,6 @@ data class CuestionarioConPreguntas(
 )
 
 data class PreguntaConRespuestas(
-    val pregunta: com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta,
-    val respuestas: List<com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta>
+    val pregunta: EntidadPregunta,
+    val respuestas: List<EntidadRespuesta>
 )

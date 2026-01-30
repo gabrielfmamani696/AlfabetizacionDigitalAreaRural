@@ -20,6 +20,9 @@ interface LeccionDao {
     @Query("SELECT * FROM lecciones ORDER BY fecha_creacion")
     suspend fun consultarLecciones(): List<EntidadLeccion>
 
+    @Query("SELECT * FROM lecciones WHERE id_leccion = :id")
+    suspend fun obtenerLeccionPorId(id: Int): EntidadLeccion?
+
     //borra una leccion en especifico
     @Query("DELETE FROM lecciones WHERE id_leccion = :id")
     suspend fun eliminarLeccionPorId(id: Int)

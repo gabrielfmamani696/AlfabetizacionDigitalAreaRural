@@ -42,7 +42,11 @@ fun PantallaCuestionario(
     onNavigateBack: () -> Unit
 ) {
     val viewModel: CuestionarioViewModel = viewModel(
-        factory = CuestionarioViewModelFactory(repositorio, idLeccion, idUsuario)
+        factory = CuestionarioViewModelFactory(
+            repositorio,
+            idLeccion,
+            idUsuario
+        )
     )
     // variables de estado
     val estado by viewModel.estadoCuestionario.collectAsState()
@@ -56,7 +60,7 @@ fun PantallaCuestionario(
                      modifier = Modifier.fillMaxWidth().padding(16.dp),
                      verticalAlignment = Alignment.CenterVertically
                  ) {
-                     Text("Evaluación", style = MaterialTheme.typography.titleLarge)
+                     Text("Cuestionario de evaluación", style = MaterialTheme.typography.titleLarge)
                  }
              }
         }

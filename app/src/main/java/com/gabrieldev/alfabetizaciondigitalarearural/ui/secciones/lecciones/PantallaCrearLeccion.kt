@@ -1,5 +1,8 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,9 +10,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels.CrearLeccionViewModel
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels.CrearLeccionViewModel.CrearLeccionViewModelFactory
@@ -36,14 +45,17 @@ fun PantallaCrearLeccion(
     // ESTADOS DEL VIEWMODEL
     val titulo by viewModel.titulo.collectAsState()
     val tema by viewModel.tema.collectAsState()
-    val tituloCuestionario by viewModel.tituloCuestionario.collectAsState()
+    
+    // Ahora observamos la lista de cuestionarios y el activo
+    val listaCuestionarios by viewModel.listaCuestionarios.collectAsState()
+    val cuestionarioActivoId by viewModel.cuestionarioActivoId.collectAsState()
+    
     val tarjetas by viewModel.listaTarjetas.collectAsState()
-    val preguntas by viewModel.listaPreguntas.collectAsState()
     val mensajeUsuario by viewModel.mensajeUsuario.collectAsState()
     val navegarAtras by viewModel.navegarAtras.collectAsState()
 
     // ESTADO DE NAVEGACIÓN
-    // 1=Datos, 2=Tarjetas, 3=Preguntas
+    // 1=Datos, 2=Tarjetas, 3=Cuestionarios
     var pasoActual by remember { mutableStateOf(1) }
     val totalPasos = 3
 
@@ -88,7 +100,6 @@ fun PantallaCrearLeccion(
             }
         },
         bottomBar = {
-            // BARRA DE NAVEGACIÓN INFERIOR
             BottomAppBar {
 
                 if (pasoActual > 1) {
@@ -112,18 +123,21 @@ fun PantallaCrearLeccion(
             when (pasoActual) {
                 1 -> PasoUnoDatos(
                     titulo = titulo, onTituloChange = { viewModel.actualizarTitulo(it) },
-                    tema = tema, onTemaChange = { viewModel.actualizarTema(it) },
-                    tituloQuiz = tituloCuestionario, onTituloQuizChange = { viewModel.actualizarTituloCuestionario(it) }
+                    tema = tema, onTemaChange = { viewModel.actualizarTema(it) }
                 )
                 2 -> PasoDosTarjetas(
                     listaTarjetas = tarjetas,
                     onAgregar = { t, tipo, data -> viewModel.agregarTarjeta(t, tipo, data) },
                     onEliminar = { viewModel.eliminarTarjeta(it) }
                 )
-                3 -> PasoTresPreguntas(
-                    listaPreguntas = preguntas,
-                    onAgregar = { e, r -> viewModel.agregarPregunta(e, r) },
-                    onEliminar = { viewModel.eliminarPregunta(it) }
+                3 -> PasoTresCuestionarios(
+                    listaCuestionarios = listaCuestionarios,
+                    cuestionarioActivoId = cuestionarioActivoId,
+                    onCrearCuestionario = { title -> viewModel.crearNuevoCuestionario(title) },
+                    onSeleccionarCuestionario = { id -> viewModel.seleccionarCuestionario(id) },
+                    onEliminarCuestionario = { id -> viewModel.eliminarCuestionario(id) },
+                    onAgregarPregunta = { e, r -> viewModel.agregarPregunta(e, r) },
+                    onEliminarPregunta = { index -> viewModel.eliminarPregunta(index) }
                 )
             }
         }
@@ -133,8 +147,7 @@ fun PantallaCrearLeccion(
 @Composable
 fun PasoUnoDatos(
     titulo: String, onTituloChange: (String) -> Unit,
-    tema: String, onTemaChange: (String) -> Unit,
-    tituloQuiz: String, onTituloQuizChange: (String) -> Unit
+    tema: String, onTemaChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Información General", style = MaterialTheme.typography.headlineSmall)
@@ -152,27 +165,12 @@ fun PasoUnoDatos(
             label = { Text("Tema (ej. Informática Básica)") },
             modifier = Modifier.fillMaxWidth()
         )
-        
-        Spacer(Modifier.height(24.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(16.dp))
-        
-        Text("Configuración del Cuestionario", style = MaterialTheme.typography.titleMedium)
-        Text("Se creará automáticamente al final de la lección.", style = MaterialTheme.typography.bodySmall)
-        Spacer(Modifier.height(8.dp))
-        
-        OutlinedTextField(
-            value = tituloQuiz, onValueChange = onTituloQuizChange,
-            label = { Text("Título del Cuestionario (Opcional)") },
-            placeholder = { Text("Ej. Examen de... (Por defecto usa el título de la lección)") },
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
 @Composable
 fun PasoDosTarjetas(
-    listaTarjetas: List<com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta>,
+    listaTarjetas: List<EntidadTarjeta>,
     onAgregar: (String, String, String) -> Unit,
     onEliminar: (Int) -> Unit
 ) {
@@ -180,26 +178,28 @@ fun PasoDosTarjetas(
     var imagenUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
     val colores = listOf(
-        "#2196F3" to Color(0xFF2196F3), // Azul
-        "#4CAF50" to Color(0xFF4CAF50), // Verde
-        "#FF9800" to Color(0xFFFF9800), // Naranja
-        "#9C27B0" to Color(0xFF9C27B0), // Púrpura
-        "#F44336" to Color(0xFFF44336), // Rojo
-        "#00BCD4" to Color(0xFF00BCD4)  // Cian
+        "#2196F3" to Color(0xFF2196F3),
+        "#4CAF50" to Color(0xFF4CAF50),
+        "#FF9800" to Color(0xFFFF9800),
+        "#9C27B0" to Color(0xFF9C27B0),
+        "#F44336" to Color(0xFFF44336),
+        "#00BCD4" to Color(0xFF00BCD4)
     )
     var colorSeleccionado by remember { mutableStateOf(colores[0].first) }
     
-    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()
+    val launcher = rememberLauncherForActivityResult (
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         imagenUri = uri
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text("Añadir Tarjetas de Contenido", style = MaterialTheme.typography.headlineSmall)
-
-        // Usamos weight(0f) para que esta parte no se expanda, solo ocupe lo necesario
-        Column(modifier = Modifier.fillMaxWidth()) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 80.dp)
+    ) {
+        item {
+            Text("Añadir Tarjetas de Contenido", style = MaterialTheme.typography.headlineSmall)
+            
             Card(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -211,14 +211,12 @@ fun PasoDosTarjetas(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(150.dp) // Reducido un poco para dar espacio
+                            .height(150.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.Gray.copy(alpha = 0.3f))
                             .clickable {
                                 launcher.launch(
-                                    androidx.activity.result.PickVisualMediaRequest(
-                                        androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly
-                                    )
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
                             },
                         contentAlignment = Alignment.Center
@@ -228,11 +226,12 @@ fun PasoDosTarjetas(
                                 model = imagenUri,
                                 contentDescription = "Imagen seleccionada",
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                contentScale = ContentScale.Crop
                             )
                             IconButton(
                                 onClick = { imagenUri = null },
-                                modifier = Modifier.align(Alignment.TopEnd).background(Color.Black.copy(alpha=0.5f), androidx.compose.foundation.shape.CircleShape)
+                                modifier = Modifier.align(Alignment.TopEnd).background(Color.Black.copy(alpha=0.5f), CircleShape
+                                )
                             ) {
                                 Icon(Icons.Default.Close, null, tint = Color.White)
                             }
@@ -256,12 +255,15 @@ fun PasoDosTarjetas(
                                 Box(
                                     modifier = Modifier
                                         .size(32.dp)
-                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .clip(CircleShape)
                                         .background(color)
                                         .clickable { colorSeleccionado = hex }
                                         .then(
                                             if (colorSeleccionado == hex) 
-                                                Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, androidx.compose.foundation.shape.CircleShape)
+                                                Modifier.border(
+                                                    2.dp,
+                                                    MaterialTheme.colorScheme.onSurface,
+                                                    CircleShape)
                                             else Modifier
                                         )
                                 )
@@ -288,7 +290,6 @@ fun PasoDosTarjetas(
                                 
                                 contenido = ""
                                 imagenUri = null
-                                // Mantenemos el color seleccionado
                             }
                         },
                         modifier = Modifier.align(Alignment.End)
@@ -299,40 +300,34 @@ fun PasoDosTarjetas(
                 }
             }
             HorizontalDivider()
+            Text("Tarjetas creadas (${listaTarjetas.size}):", modifier = Modifier.padding(vertical = 8.dp))
         }
 
-        Text("Tarjetas creadas (${listaTarjetas.size}):", modifier = Modifier.padding(vertical = 8.dp))
-
-        LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(bottom = 16.dp) // Padding extra al final
-        ) {
-            itemsIndexed(listaTarjetas) { index, tarjeta ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(
-                        modifier = Modifier.padding(8.dp), 
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                         if (tarjeta.tipoFondo == "IMAGEN") {
-                            coil.compose.AsyncImage(
-                                model = tarjeta.dataFondo,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        } else {
-                            val colorFondo = try {
-                                Color(android.graphics.Color.parseColor(tarjeta.dataFondo))
-                            } catch (e: Exception) { Color.Gray }
-                            
-                            Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)).background(colorFondo))
-                        }
+        itemsIndexed(listaTarjetas) { index, tarjeta ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier.padding(8.dp), 
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                     if (tarjeta.tipoFondo == "IMAGEN") {
+                        coil.compose.AsyncImage(
+                            model = tarjeta.dataFondo,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        val colorFondo = try {
+                            Color(android.graphics.Color.parseColor(tarjeta.dataFondo))
+                        } catch (e: Exception) { Color.Gray }
                         
-                        Spacer(Modifier.width(8.dp))
-                        Text(tarjeta.contenidoTexto, maxLines = 1, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { onEliminar(index) }) {
-                            Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
-                        }
+                        Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)).background(colorFondo))
+                    }
+                    
+                    Spacer(Modifier.width(8.dp))
+                    Text(tarjeta.contenidoTexto, maxLines = 1, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { onEliminar(index) }) {
+                        Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -341,12 +336,46 @@ fun PasoDosTarjetas(
 }
 
 @Composable
-fun PasoTresPreguntas(
-    listaPreguntas: List<com.gabrieldev.alfabetizaciondigitalarearural.data.repository.PreguntaConRespuestas>,
-    onAgregar: (String, List<EntidadRespuesta>) -> Unit,
-    onEliminar: (Int) -> Unit
+fun PasoTresCuestionarios(
+    listaCuestionarios: List<CrearLeccionViewModel.CuestionarioBorrador>,
+    cuestionarioActivoId: String?,
+    onCrearCuestionario: (String) -> Unit,
+    onSeleccionarCuestionario: (String?) -> Unit,
+    onEliminarCuestionario: (String) -> Unit,
+    onAgregarPregunta: (String, List<EntidadRespuesta>) -> Unit,
+    onEliminarPregunta: (Int) -> Unit
+) {
+    if (cuestionarioActivoId == null) {
+        VistaListaCuestionarios(
+            lista = listaCuestionarios,
+            onCrear = onCrearCuestionario,
+            onSeleccionar = onSeleccionarCuestionario,
+            onEliminar = onEliminarCuestionario
+        )
+    } else {
+        val activo = listaCuestionarios.find { it.idTemporal == cuestionarioActivoId }
+        if (activo != null) {
+            VistaEditorPreguntas(
+                cuestionario = activo,
+                onVolver = { onSeleccionarCuestionario(null) },
+                onAgregar = onAgregarPregunta,
+                onEliminar = onEliminarPregunta
+            )
+        } else {
+            LaunchedEffect(Unit) { onSeleccionarCuestionario(null) }
+        }
+    }
+}
+
+@Composable
+fun VistaListaCuestionarios(
+    lista: List<CrearLeccionViewModel.CuestionarioBorrador>,
+    onCrear: (String) -> Unit,
+    onSeleccionar: (String) -> Unit,
+    onEliminar: (String) -> Unit
 ) {
     var mostrarDialogo by remember { mutableStateOf(false) }
+    var nuevoTitulo by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -354,23 +383,123 @@ fun PasoTresPreguntas(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Evaluación", style = MaterialTheme.typography.headlineSmall)
+            Text("Evaluaciones", style = MaterialTheme.typography.headlineSmall)
             Button(onClick = { mostrarDialogo = true }) {
                 Icon(Icons.Default.Add, null)
-                Text(" Nueva Pregunta")
+                Text(" Nuevo Cuestionario")
             }
         }
         
         Spacer(Modifier.height(16.dp))
         
-        if (listaPreguntas.isEmpty()) {
-            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                Text("No has añadido preguntas aún.", color = Color.Gray)
+        if (lista.isEmpty()) {
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                Text(
+                    "No hay cuestionarios creados.\nAgrega uno para evaluar a los estudiantes.", 
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                itemsIndexed(lista) { index, item ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { onSeleccionar(item.idTemporal) },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.titulo, style = MaterialTheme.typography.titleMedium)
+                                Text("${item.preguntas.size} preguntas", style = MaterialTheme.typography.bodySmall)
+                            }
+                            IconButton(onClick = { onSeleccionar(item.idTemporal) }) {
+                                Icon(Icons.Default.Edit, "Editar")
+                            }
+                            IconButton(onClick = { onEliminar(item.idTemporal) }) {
+                                Icon(Icons.Default.Delete, "Borrar", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (mostrarDialogo) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogo = false },
+            title = { Text("Nuevo Cuestionario") },
+            text = {
+                OutlinedTextField(
+                    value = nuevoTitulo,
+                    onValueChange = { nuevoTitulo = it },
+                    label = { Text("Título (ej. Examen Final)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    if (nuevoTitulo.isNotBlank()) {
+                        onCrear(nuevoTitulo)
+                        nuevoTitulo = ""
+                        mostrarDialogo = false
+                    }
+                }) { Text("Crear") }
+            },
+            dismissButton = { 
+                TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") } 
+            }
+        )
+    }
+}
+
+@Composable
+fun VistaEditorPreguntas(
+    cuestionario: CrearLeccionViewModel.CuestionarioBorrador,
+    onVolver: () -> Unit,
+    onAgregar: (String, List<EntidadRespuesta>) -> Unit,
+    onEliminar: (Int) -> Unit
+) {
+    var mostrarDialogo by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onVolver) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+            }
+            Text(
+                text = cuestionario.titulo, 
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        
+        HorizontalDivider()
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("${cuestionario.preguntas.size} Preguntas", style = MaterialTheme.typography.labelLarge)
+            Button(onClick = { mostrarDialogo = true }) {
+                Icon(Icons.Default.Add, null)
+                Text(" Agregar Pregunta")
             }
         }
         
         LazyColumn(modifier = Modifier.weight(1f)) {
-            itemsIndexed(listaPreguntas) { index, paquete ->
+            itemsIndexed(cuestionario.preguntas) { index, paquete ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
@@ -384,7 +513,7 @@ fun PasoTresPreguntas(
                                 Icon(Icons.Default.Delete, "Borrar")
                             }
                         }
-                        // Mostrar respuestas chiquitas
+                        
                         paquete.respuestas.forEach { resp ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(

@@ -28,8 +28,39 @@ class CrearLeccionViewModel(
     private val _tema = MutableStateFlow("")
     val tema = _tema.asStateFlow()
 
-    private val _tituloCuestionario = MutableStateFlow("")
-    val tituloCuestionario = _tituloCuestionario.asStateFlow()
+    private val _theme = MutableStateFlow("") // Alias temporal
+    
+    // ESTRUCTURA PARA MANEJAR MÚLTIPLES CUESTIONARIOS
+    data class CuestionarioBorrador(
+        val idTemporal: String = UUID.randomUUID().toString(),
+        val titulo: String,
+        val preguntas: List<PreguntaConRespuestas> = emptyList()
+    )
+
+    // LISTA DE CUESTIONARIOS (En lugar de un solo cuestionario)
+    private val _listaCuestionarios = MutableStateFlow<List<CuestionarioBorrador>>(emptyList())
+    val listaCuestionarios = _listaCuestionarios.asStateFlow()
+
+    // CUESTIONARIO SELECCIONADO PARA EDITAR (Si es null, mostramos la lista)
+    private val _cuestionarioActivoId = MutableStateFlow<String?>(null)
+    val cuestionarioActivoId = _cuestionarioActivoId.asStateFlow()
+
+    fun seleccionarCuestionario(id: String?) {
+        _cuestionarioActivoId.value = id
+    }
+
+    fun crearNuevoCuestionario(titulo: String) {
+        val nuevo = CuestionarioBorrador(titulo = titulo)
+        _listaCuestionarios.value = _listaCuestionarios.value + nuevo
+        _cuestionarioActivoId.value = nuevo.idTemporal
+    }
+
+    fun eliminarCuestionario(id: String) {
+        _listaCuestionarios.value = _listaCuestionarios.value.filter { it.idTemporal != id }
+        if (_cuestionarioActivoId.value == id) {
+            _cuestionarioActivoId.value = null
+        }
+    }
 
     private val _listaTarjetas = MutableStateFlow<List<EntidadTarjeta>>(emptyList())
     val listaTarjetas = _listaTarjetas.asStateFlow()
@@ -40,10 +71,6 @@ class CrearLeccionViewModel(
     private val _navegarAtras = MutableStateFlow(false)
     val navegarAtras = _navegarAtras.asStateFlow()
 
-    private val _listaPreguntas = MutableStateFlow<List<PreguntaConRespuestas>>(emptyList())
-    val listaPreguntas = _listaPreguntas.asStateFlow()
-
-    //escritura del usuario
     fun actualizarTitulo(nuevoTitulo: String) {
         _titulo.value = nuevoTitulo
     }
@@ -52,10 +79,7 @@ class CrearLeccionViewModel(
         _tema.value = nuevoTema
     }
 
-    fun actualizarTituloCuestionario(nuevo: String) {
-        _tituloCuestionario.value = nuevo
-    }
-
+    // Funciones de Tarjetas
     fun agregarTarjeta(
         contenido: String,
         tipoFondo: String,
@@ -69,7 +93,6 @@ class CrearLeccionViewModel(
             dataFondo = dataFondo
         )
 
-        // anadimos la nueva tarjeta a la lista _listaTarjetas.value
         _listaTarjetas.value = _listaTarjetas.value + nuevaTarjeta
     }
 
@@ -78,7 +101,6 @@ class CrearLeccionViewModel(
         if (index in listaMutable.indices) {
             listaMutable.removeAt(index)
 
-            // Re-ordenamos para que no queden vacios entre tarjetas
             listaMutable.forEachIndexed { i, tarjeta ->
                 listaMutable[i] = tarjeta.copy(ordenSecuencia = i + 1)
             }
@@ -101,7 +123,6 @@ class CrearLeccionViewModel(
         viewModelScope.launch {
             try {
                 val usuario = repositorio.ultimoUsuario.firstOrNull()
-
                 val alias = usuario?.alias ?: "Desconocido"
                 val uuid = usuario?.uuidUsuario ?: "local"
 
@@ -113,7 +134,6 @@ class CrearLeccionViewModel(
                     fechaCreacion = System.currentTimeMillis(),
                     creadaPorUsuario = true,
                     uuidAutorOriginal = uuid,
-                    // TODO insertar la url de donde se encuentra la imagen
                     imagenUrl = null
                 )
 
@@ -127,19 +147,18 @@ class CrearLeccionViewModel(
                     repositorio.insertarTarjeta(repo)
                 }
 
-                if(_listaPreguntas.value.isNotEmpty()){
-
-                    val tituloFinal = _tituloCuestionario.value.ifBlank { "Cuestionario: ${_titulo.value}" }
-
-                    val nuevoCuestionario: EntidadCuestionario = EntidadCuestionario(
-                        idLeccion = idLeccionGenerado.toInt(),
-                        tituloQuiz = tituloFinal
-                    )
-
-                    repositorio.insertarCuestionarioCompleto(
-                        cuestionario = nuevoCuestionario,
-                        preguntas = _listaPreguntas.value
-                    )
+                // Guardar TODOS los cuestionarios creados
+                _listaCuestionarios.value.forEach { borrador ->
+                    if (borrador.preguntas.isNotEmpty()) {
+                        val nuevoCuestionario = EntidadCuestionario(
+                            idLeccion = idLeccionGenerado.toInt(),
+                            tituloQuiz = borrador.titulo
+                        )
+                        repositorio.insertarCuestionarioCompleto(
+                            cuestionario = nuevoCuestionario,
+                            preguntas = borrador.preguntas
+                        )
+                    }
                 }
 
                 _mensajeUsuario.value = "Lección creada con éxito"
@@ -159,22 +178,37 @@ class CrearLeccionViewModel(
         enunciado: String,
         respuestas: List<EntidadRespuesta>
     ) {
+        val idActivo = _cuestionarioActivoId.value ?: return
 
-        val nuevaPregunta: EntidadPregunta = EntidadPregunta(
-            idCuestionario = 0,
+        val nuevaPregunta = EntidadPregunta(
+            idCuestionario = 0, 
             enunciado = enunciado
         )
+        val preguntaConRespuestas = PreguntaConRespuestas(nuevaPregunta, respuestas)
 
-        val preguntaConRespuestas: PreguntaConRespuestas = PreguntaConRespuestas(nuevaPregunta, respuestas)
-
-        _listaPreguntas.value = _listaPreguntas.value + preguntaConRespuestas
+        // Actualizamos la lista de cuestionarios modificando SOLO el activo
+        _listaCuestionarios.value = _listaCuestionarios.value.map { cuestionario ->
+            if (cuestionario.idTemporal == idActivo) {
+                cuestionario.copy(preguntas = cuestionario.preguntas + preguntaConRespuestas)
+            } else {
+                cuestionario
+            }
+        }
     }
 
     fun eliminarPregunta(index: Int) {
-        val listaMutable = _listaPreguntas.value.toMutableList()
-        if (index in listaMutable.indices) {
-            listaMutable.removeAt(index)
-            _listaPreguntas.value = listaMutable
+        val idActivo = _cuestionarioActivoId.value ?: return
+
+        _listaCuestionarios.value = _listaCuestionarios.value.map { cuestionario ->
+            if (cuestionario.idTemporal == idActivo) {
+                val preguntasMutable = cuestionario.preguntas.toMutableList()
+                if (index in preguntasMutable.indices) {
+                    preguntasMutable.removeAt(index)
+                }
+                cuestionario.copy(preguntas = preguntasMutable)
+            } else {
+                cuestionario
+            }
         }
     }
 
