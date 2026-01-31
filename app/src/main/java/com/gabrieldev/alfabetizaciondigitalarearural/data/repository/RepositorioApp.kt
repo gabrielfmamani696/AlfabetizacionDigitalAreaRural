@@ -125,29 +125,6 @@ class RepositorioApp(
         }
     }
 
-    suspend fun obtenerTarjetasPorLeccion(idLeccion: Int): List<EntidadTarjeta> {
-        return tarjetaDao.obtenerTarjetasPorLeccion(idLeccion)
-    }
-
-    suspend fun obtenerCuestionarioAleatorio(idLeccion: Int): CuestionarioConPreguntas? {
-        val cuestionarios = cuestionarioDao.obtenerCuestionariosPorLeccion(idLeccion)
-        if (cuestionarios.isEmpty()) return null
-
-        val cuestionario = cuestionarios.random()
-        val preguntas = cuestionarioDao.obtenerPreguntasPorCuestionario(cuestionario.idCuestionario)
-        
-        val preguntasConRespuestas = preguntas.map { pregunta ->
-            val respuestas = cuestionarioDao.obtenerRespuestasPorPregunta(pregunta.idPregunta)
-            PreguntaConRespuestas(pregunta, respuestas)
-        }
-
-        return CuestionarioConPreguntas(cuestionario, preguntasConRespuestas)
-    }
-
-    suspend fun insertarIntento(intento: EntidadIntentoLeccion) {
-        intentoLeccionDao.insertarIntento(intento)
-    }
-
     suspend fun defaultCuestionarios() {
         val cuestionariosExistentes = cuestionarioDao.obtenerCuestionariosPorLeccion(1)
         if (cuestionariosExistentes.isEmpty()) {
@@ -190,6 +167,29 @@ class RepositorioApp(
                 EntidadRespuesta(idPregunta = idP3, textoOpcion = "Esperar a que el sistema inicie", esCorrecta = true)
             ))
         }
+    }
+
+    suspend fun obtenerTarjetasPorLeccion(idLeccion: Int): List<EntidadTarjeta> {
+        return tarjetaDao.obtenerTarjetasPorLeccion(idLeccion)
+    }
+
+    suspend fun obtenerCuestionarioAleatorio(idLeccion: Int): CuestionarioConPreguntas? {
+        val cuestionarios = cuestionarioDao.obtenerCuestionariosPorLeccion(idLeccion)
+        if (cuestionarios.isEmpty()) return null
+
+        val cuestionario = cuestionarios.random()
+        val preguntas = cuestionarioDao.obtenerPreguntasPorCuestionario(cuestionario.idCuestionario)
+        
+        val preguntasConRespuestas = preguntas.map { pregunta ->
+            val respuestas = cuestionarioDao.obtenerRespuestasPorPregunta(pregunta.idPregunta)
+            PreguntaConRespuestas(pregunta, respuestas)
+        }
+
+        return CuestionarioConPreguntas(cuestionario, preguntasConRespuestas)
+    }
+
+    suspend fun insertarIntento(intento: EntidadIntentoLeccion) {
+        intentoLeccionDao.insertarIntento(intento)
     }
 
     suspend fun insertarLeccion(leccion: EntidadLeccion): Long {

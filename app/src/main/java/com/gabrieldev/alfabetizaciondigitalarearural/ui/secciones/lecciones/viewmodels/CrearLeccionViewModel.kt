@@ -187,6 +187,18 @@ class CrearLeccionViewModel(
         }
     }
 
+    fun actualizarTituloCuestionario(nuevoTitulo: String) {
+        val idActivo = _cuestionarioActivoId.value ?: return
+
+        _listaCuestionarios.value = _listaCuestionarios.value.map { cuestionario ->
+            if (cuestionario.idTemporal == idActivo) {
+                cuestionario.copy(titulo = nuevoTitulo)
+            } else {
+                cuestionario
+            }
+        }
+    }
+
     fun limpiarMensajes() {
         _mensajeUsuario.value = null
     }

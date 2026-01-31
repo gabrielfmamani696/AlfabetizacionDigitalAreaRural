@@ -106,7 +106,10 @@ fun PantallaLecciones(
                             onClick = {
                                     navController.navigate(Rutas.VisualizarTarjetas.crearRuta(leccion.idLeccion))
                             },
-                            onBorrar = { /* TODO: Borrar */ }
+                            onEditar = {
+                                navController.navigate(Rutas.CrearLeccion.crearRuta(leccion.idLeccion))
+                            },
+                            onBorrar = { /* TODO: Borrar */ },
                         )
                     }
                 }

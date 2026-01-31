@@ -36,11 +36,19 @@ import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.view
 @Composable
 fun PantallaCrearLeccion(
     repositorio: RepositorioApp,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    idLeccionEditar: Int = 0
 ) {
     val viewModel: CrearLeccionViewModel = viewModel(
         factory = CrearLeccionViewModelFactory(repositorio)
     )
+
+    // ejecutado una vez al entrar a la pantalla
+    LaunchedEffect(Unit) {
+        if (idLeccionEditar > 0) {
+            viewModel.cargarDatosParaEdicion(idLeccionEditar)
+        }
+    }
 
     // ESTADOS DEL VIEWMODEL
     val titulo by viewModel.titulo.collectAsState()
@@ -121,23 +129,24 @@ fun PantallaCrearLeccion(
         Box(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
 
             when (pasoActual) {
-                1 -> PasoUnoDatos(
+                1 -> Lecciones(
                     titulo = titulo, onTituloChange = { viewModel.actualizarTitulo(it) },
                     tema = tema, onTemaChange = { viewModel.actualizarTema(it) }
                 )
-                2 -> PasoDosTarjetas(
+                2 -> Tarjetas(
                     listaTarjetas = tarjetas,
                     onAgregar = { t, tipo, data -> viewModel.agregarTarjeta(t, tipo, data) },
                     onEliminar = { viewModel.eliminarTarjeta(it) }
                 )
-                3 -> PasoTresCuestionarios(
+                3 -> Cuestionarios(
                     listaCuestionarios = listaCuestionarios,
                     cuestionarioActivoId = cuestionarioActivoId,
                     onCrearCuestionario = { title -> viewModel.crearNuevoCuestionario(title) },
                     onSeleccionarCuestionario = { id -> viewModel.seleccionarCuestionario(id) },
                     onEliminarCuestionario = { id -> viewModel.eliminarCuestionario(id) },
                     onAgregarPregunta = { e, r -> viewModel.agregarPregunta(e, r) },
-                    onEliminarPregunta = { index -> viewModel.eliminarPregunta(index) }
+                    onEliminarPregunta = { index -> viewModel.eliminarPregunta(index) },
+                    onTituloChange = { titulo -> viewModel.actualizarTituloCuestionario(titulo) }
                 )
             }
         }
@@ -145,7 +154,7 @@ fun PantallaCrearLeccion(
 }
 
 @Composable
-fun PasoUnoDatos(
+fun Lecciones(
     titulo: String, onTituloChange: (String) -> Unit,
     tema: String, onTemaChange: (String) -> Unit
 ) {
@@ -158,6 +167,7 @@ fun PasoUnoDatos(
             label = { Text("Título de la Lección") },
             modifier = Modifier.fillMaxWidth()
         )
+
         Spacer(Modifier.height(8.dp))
         
         OutlinedTextField(
@@ -169,7 +179,7 @@ fun PasoUnoDatos(
 }
 
 @Composable
-fun PasoDosTarjetas(
+fun Tarjetas(
     listaTarjetas: List<EntidadTarjeta>,
     onAgregar: (String, String, String) -> Unit,
     onEliminar: (Int) -> Unit
@@ -336,14 +346,15 @@ fun PasoDosTarjetas(
 }
 
 @Composable
-fun PasoTresCuestionarios(
+fun Cuestionarios(
     listaCuestionarios: List<CrearLeccionViewModel.CuestionarioBorrador>,
     cuestionarioActivoId: String?,
     onCrearCuestionario: (String) -> Unit,
     onSeleccionarCuestionario: (String?) -> Unit,
     onEliminarCuestionario: (String) -> Unit,
     onAgregarPregunta: (String, List<EntidadRespuesta>) -> Unit,
-    onEliminarPregunta: (Int) -> Unit
+    onEliminarPregunta: (Int) -> Unit,
+    onTituloChange: (String) -> Unit
 ) {
     if (cuestionarioActivoId == null) {
         VistaListaCuestionarios(
@@ -359,7 +370,8 @@ fun PasoTresCuestionarios(
                 cuestionario = activo,
                 onVolver = { onSeleccionarCuestionario(null) },
                 onAgregar = onAgregarPregunta,
-                onEliminar = onEliminarPregunta
+                onEliminar = onEliminarPregunta,
+                onTituloChange = onTituloChange
             )
         } else {
             LaunchedEffect(Unit) { onSeleccionarCuestionario(null) }
@@ -464,7 +476,8 @@ fun VistaEditorPreguntas(
     cuestionario: CrearLeccionViewModel.CuestionarioBorrador,
     onVolver: () -> Unit,
     onAgregar: (String, List<EntidadRespuesta>) -> Unit,
-    onEliminar: (Int) -> Unit
+    onEliminar: (Int) -> Unit,
+    onTituloChange: (String) -> Unit
 ) {
     var mostrarDialogo by remember { mutableStateOf(false) }
 
@@ -481,6 +494,16 @@ fun VistaEditorPreguntas(
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
+            )
+
+            OutlinedTextField(
+                value = cuestionario.titulo,
+                onValueChange = onTituloChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
+                label = { Text("Título del Cuestionario") },
+                singleLine = true
             )
         }
         

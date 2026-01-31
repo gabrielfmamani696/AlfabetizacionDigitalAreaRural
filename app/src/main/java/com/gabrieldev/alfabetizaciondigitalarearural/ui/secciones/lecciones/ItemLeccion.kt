@@ -31,6 +31,7 @@ import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
 fun ItemLeccion(
     leccion: EntidadLeccion,
     onClick: () -> Unit,
+    onEditar: () -> Unit,
     onBorrar: () -> Unit
 ) {
     Card(
@@ -85,7 +86,7 @@ fun ItemLeccion(
                 IconButton(onClick = { /* TODO: Compartir */ }) {
                     Icon(Icons.Default.Share, contentDescription = "Boton de Compartir")
                 }
-                IconButton(onClick = { /* TODO: Editar */ }) {
+                IconButton(onClick = onEditar   ) {
                     Icon(Icons.Default.Edit, contentDescription = "Boton de Editar")
                 }
                 IconButton(onClick = onBorrar) {

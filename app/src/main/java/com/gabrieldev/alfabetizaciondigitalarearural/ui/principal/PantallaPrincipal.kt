@@ -27,6 +27,7 @@ import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaPerfil
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaSeccionInicio
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.CarruselTarjetas
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaCrearLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaLecciones
 
 @Composable
@@ -109,10 +110,24 @@ fun PantallaPrincipal(
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
-                composable(Rutas.CrearLeccion.ruta) {
-                    com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaCrearLeccion(
+                composable(
+                    route = Rutas.CrearLeccion.ruta,
+
+                    arguments = listOf(
+                        navArgument("idLeccion") {
+                            type = NavType.IntType
+                            defaultValue = 0
+                        }
+                    )
+                ) { backStackEntry ->
+                    // Recuperamos el ID que viene en la ruta
+                    val idLeccion = backStackEntry.arguments?.getInt("idLeccion") ?: 0
+
+                    // Se lo pasamos a la pantalla
+                    PantallaCrearLeccion (
                         repositorio = repositorio,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        idLeccionEditar = idLeccion
                     )
                 }
             }
