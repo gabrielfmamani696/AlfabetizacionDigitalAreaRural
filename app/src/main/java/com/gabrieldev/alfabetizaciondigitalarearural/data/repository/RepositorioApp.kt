@@ -210,11 +210,74 @@ class RepositorioApp(
             // Vinculamos la pregunta al cuestionario creado
             val preguntaParaInsertar = p.pregunta.copy(idCuestionario = idCuestionario)
             val idPregunta = cuestionarioDao.insertarPregunta(preguntaParaInsertar).toInt()
-            
-            // 3. Vinculamos las respuestas a esa pregunta
+
             val respuestasParaInsertar = p.respuestas.map { it.copy(idPregunta = idPregunta) }
             cuestionarioDao.insertarRespuestas(respuestasParaInsertar)
         }
+    }
+
+    suspend fun actualizarLeccionCompleta(
+        idLeccion: Int,
+        titulo: String,
+        tema: String,
+        tarjetas: List<EntidadTarjeta>,
+        cuestionariosTemporales: List<Pair<String, List<PreguntaConRespuestas>>>
+    ) {
+        val leccionOriginal: EntidadLeccion = leccionDao.obtenerLeccionPorId(idLeccion) ?: return
+
+        val leccionActualizada: EntidadLeccion = leccionOriginal.copy(
+            titulo = titulo,
+            tema = tema
+        )
+
+        //actualizamos las tarjetas con una la nueva leccion obtenida
+        leccionDao.actualizarLeccion(leccionActualizada)
+
+        //eliminamos las tarjetas, ya tenemos las nuevas como parametro de esta nueva funcion,
+        tarjetaDao.eliminarTarjetasDeLeccion(idLeccion)
+
+        val tarjetasParaInsertar = tarjetas.map { it.copy(idLeccion = idLeccion) }
+        tarjetaDao.insertarTarjetas(tarjetasParaInsertar)
+
+        //eliminanos las lecciones (en cascada) y agregamos las nuevas
+        cuestionarioDao.eliminarCuestionariosDeLeccion(idLeccion)
+
+        //recorremos cada par de titulo y lisat de preguntas
+        cuestionariosTemporales.forEach { (tituloDelCuestionario, listaDePreguntas) ->
+
+            val nuevoCuestionario = EntidadCuestionario(
+                idLeccion = idLeccion,
+                tituloQuiz = tituloDelCuestionario
+            )
+
+            insertarCuestionarioCompleto(
+                cuestionario = nuevoCuestionario,
+                preguntas = listaDePreguntas
+            )
+        }
+    }
+
+    suspend fun obtenerLeccionConCuestionarios(idLeccion: Int): Pair<List<EntidadTarjeta>, List<CuestionarioConPreguntas>> {
+        val tarjetas = tarjetaDao.obtenerTarjetasPorLeccion(idLeccion)
+
+        val cuestionarios = cuestionarioDao.obtenerCuestionariosPorLeccion(idLeccion)
+
+        //llenamos listaCompletaCuestionarios despues de la operacion
+        val listaCompletaCuestionarios = cuestionarios.map { cuestionario ->
+            val preguntas = cuestionarioDao.obtenerPreguntasPorCuestionario(cuestionario.idCuestionario)
+
+            val preguntasConRespuestas = preguntas.map { pregunta ->
+                val respuestas = cuestionarioDao.obtenerRespuestasPorPregunta(pregunta.idPregunta)
+                PreguntaConRespuestas(pregunta, respuestas)
+            }
+            //res final
+            CuestionarioConPreguntas(cuestionario, preguntasConRespuestas)
+        }
+        return Pair(tarjetas, listaCompletaCuestionarios)
+    }
+
+    suspend fun obtenerLeccionPorId(id: Int): EntidadLeccion? {
+        return leccionDao.obtenerLeccionPorId(id)
     }
 }
 data class CuestionarioConPreguntas(

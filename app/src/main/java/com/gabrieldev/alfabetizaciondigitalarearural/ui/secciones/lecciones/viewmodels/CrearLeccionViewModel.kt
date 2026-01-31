@@ -20,6 +20,9 @@ import java.util.UUID
 class CrearLeccionViewModel(
     private val repositorio: RepositorioApp
 ): ViewModel() {
+
+    private var _idLeccionEdicion: Int? = null
+
     //estado de flujo mutable en el tiepo, acceso de escritura y lectura de variable _titulo
     private val _titulo = MutableStateFlow("")
     //estado de flujo, solo acceso de lectura
@@ -30,18 +33,17 @@ class CrearLeccionViewModel(
 
     private val _theme = MutableStateFlow("") // Alias temporal
     
-    // ESTRUCTURA PARA MANEJAR MÚLTIPLES CUESTIONARIOS
+    // multiples cuestionarios
     data class CuestionarioBorrador(
         val idTemporal: String = UUID.randomUUID().toString(),
         val titulo: String,
         val preguntas: List<PreguntaConRespuestas> = emptyList()
     )
 
-    // LISTA DE CUESTIONARIOS (En lugar de un solo cuestionario)
     private val _listaCuestionarios = MutableStateFlow<List<CuestionarioBorrador>>(emptyList())
     val listaCuestionarios = _listaCuestionarios.asStateFlow()
 
-    // CUESTIONARIO SELECCIONADO PARA EDITAR (Si es null, mostramos la lista)
+    // cuestionario seleccionado para editar
     private val _cuestionarioActivoId = MutableStateFlow<String?>(null)
     val cuestionarioActivoId = _cuestionarioActivoId.asStateFlow()
 
@@ -79,7 +81,6 @@ class CrearLeccionViewModel(
         _tema.value = nuevoTema
     }
 
-    // Funciones de Tarjetas
     fun agregarTarjeta(
         contenido: String,
         tipoFondo: String,
@@ -122,46 +123,62 @@ class CrearLeccionViewModel(
 
         viewModelScope.launch {
             try {
-                val usuario = repositorio.ultimoUsuario.firstOrNull()
-                val alias = usuario?.alias ?: "Desconocido"
-                val uuid = usuario?.uuidUsuario ?: "local"
-
-                val nuevaLeccion = EntidadLeccion(
-                    titulo = _titulo.value,
-                    tema = _tema.value,
-                    autorOriginal = alias,
-                    uuidGlobal = UUID.randomUUID().toString(),
-                    fechaCreacion = System.currentTimeMillis(),
-                    creadaPorUsuario = true,
-                    uuidAutorOriginal = uuid,
-                    imagenUrl = null
-                )
-
-                val idLeccionGenerado = repositorio.insertarLeccion(nuevaLeccion)
-
-                val tarjetasFinales = _listaTarjetas.value.map { tarjeta ->
-                    tarjeta.copy(idLeccion = idLeccionGenerado.toInt())
+                val cuestionariosParaRepo = _listaCuestionarios.value.map { borrador ->
+                    Pair(borrador.titulo, borrador.preguntas)
                 }
 
-                tarjetasFinales.forEach { repo ->
-                    repositorio.insertarTarjeta(repo)
-                }
+                if (_idLeccionEdicion != null && _idLeccionEdicion != 0) { //edicion
+                    repositorio.actualizarLeccionCompleta(
+                        idLeccion = _idLeccionEdicion!!,
+                        titulo = _titulo.value,
+                        tema = _tema.value,
+                        tarjetas = _listaTarjetas.value,
+                        cuestionariosTemporales = cuestionariosParaRepo
+                    )
+                    _mensajeUsuario.value = "Lección actualizada con éxito"
+                } else {
 
-                // Guardar TODOS los cuestionarios creados
-                _listaCuestionarios.value.forEach { borrador ->
-                    if (borrador.preguntas.isNotEmpty()) {
-                        val nuevoCuestionario = EntidadCuestionario(
-                            idLeccion = idLeccionGenerado.toInt(),
-                            tituloQuiz = borrador.titulo
-                        )
-                        repositorio.insertarCuestionarioCompleto(
-                            cuestionario = nuevoCuestionario,
-                            preguntas = borrador.preguntas
-                        )
+                    val usuario = repositorio.ultimoUsuario.firstOrNull()
+                    val alias = usuario?.alias ?: "Desconocido"
+                    val uuid = usuario?.uuidUsuario ?: "local"
+
+                    val nuevaLeccion = EntidadLeccion(
+                        titulo = _titulo.value,
+                        tema = _tema.value,
+                        autorOriginal = alias,
+                        uuidGlobal = UUID.randomUUID().toString(),
+                        fechaCreacion = System.currentTimeMillis(),
+                        creadaPorUsuario = true,
+                        uuidAutorOriginal = uuid,
+                        imagenUrl = null
+                    )
+
+                    val idLeccionGenerado = repositorio.insertarLeccion(nuevaLeccion)
+
+                    val tarjetasFinales = _listaTarjetas.value.map { tarjeta ->
+                        tarjeta.copy(idLeccion = idLeccionGenerado.toInt())
                     }
-                }
 
-                _mensajeUsuario.value = "Lección creada con éxito"
+                    tarjetasFinales.forEach { repo ->
+                        repositorio.insertarTarjeta(repo)
+                    }
+
+                    _listaCuestionarios.value.forEach { borrador ->
+                        if (borrador.preguntas.isNotEmpty()) {
+                            val nuevoCuestionario = EntidadCuestionario(
+                                idLeccion = idLeccionGenerado.toInt(),
+                                tituloQuiz = borrador.titulo
+                            )
+                            repositorio.insertarCuestionarioCompleto(
+                                cuestionario = nuevoCuestionario,
+                                preguntas = borrador.preguntas
+                            )
+                        }
+                    }
+
+                    _mensajeUsuario.value = "Lección creada con éxito"
+
+                }
                 _navegarAtras.value = true
 
             } catch (e: Exception) {
@@ -209,6 +226,31 @@ class CrearLeccionViewModel(
             } else {
                 cuestionario
             }
+        }
+    }
+
+    fun cargarDatosParaEdicion(idLeccion: Int) {
+        _idLeccionEdicion = idLeccion
+
+        viewModelScope.launch{
+            val leccion = repositorio.obtenerLeccionPorId(idLeccion)
+            if (leccion != null) {
+                _titulo.value = leccion.titulo
+                _tema.value = leccion.tema
+            }
+
+            val (tarjetasBD, cuestionariosBD) = repositorio.obtenerLeccionConCuestionarios(idLeccion)
+
+            _listaTarjetas.value = tarjetasBD
+            //a cada uno de los cuestionarios, le asigamos nuevos datos y se asigna a borradores
+            val borradores = cuestionariosBD.map { item ->
+                CuestionarioBorrador(
+                    idTemporal = UUID.randomUUID().toString(),
+                    titulo = item.cuestionario.tituloQuiz,
+                    preguntas = item.preguntas
+                )
+            }
+            _listaCuestionarios.value = borradores
         }
     }
 
