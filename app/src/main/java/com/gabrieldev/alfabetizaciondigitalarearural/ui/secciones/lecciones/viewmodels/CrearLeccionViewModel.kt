@@ -1,5 +1,6 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.viewmodels
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -10,6 +11,7 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.Entida
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.PreguntaConRespuestas
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
+import com.gabrieldev.alfabetizaciondigitalarearural.utils.FileStorageHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -109,7 +111,15 @@ class CrearLeccionViewModel(
         }
     }
 
-    fun guardarLeccion() {
+    private val _imagenPortada = MutableStateFlow<String?>(null) // URI temporal como string
+    val imagenPortada = _imagenPortada.asStateFlow()
+
+    fun actualizarImagenPortada(uri: String?) {
+        _imagenPortada.value = uri
+    }
+
+    // Recibimos Context para poder guardar los archivos físicos
+    fun guardarLeccion(context: android.content.Context) {
 
         if (_titulo.value.isBlank() || _tema.value.isBlank()) {
             _mensajeUsuario.value = "Por favor completa el título y tema"
@@ -123,6 +133,26 @@ class CrearLeccionViewModel(
 
         viewModelScope.launch {
             try {
+                var pathPortadaFinal: String? = null
+                _imagenPortada.value?.let { uriStr ->
+                    if (uriStr.startsWith("content://")) {
+                        val uri = Uri.parse(uriStr)
+                        pathPortadaFinal = FileStorageHelper.guardarImagenDesdeUri(context, uri)
+                    } else {
+                        pathPortadaFinal = uriStr
+                    }
+                }
+
+                val tarjetasProcesadas = _listaTarjetas.value.map { tarjeta ->
+                    if (tarjeta.tipoFondo == "IMAGEN" && tarjeta.dataFondo.startsWith("content://")) {
+                        val uri = Uri.parse(tarjeta.dataFondo)
+                        val pathFinal = FileStorageHelper.guardarImagenDesdeUri(context, uri)
+                        tarjeta.copy(dataFondo = pathFinal ?: tarjeta.dataFondo)
+                    } else {
+                        tarjeta
+                    }
+                }
+
                 val cuestionariosParaRepo = _listaCuestionarios.value.map { borrador ->
                     Pair(borrador.titulo, borrador.preguntas)
                 }
@@ -132,9 +162,18 @@ class CrearLeccionViewModel(
                         idLeccion = _idLeccionEdicion!!,
                         titulo = _titulo.value,
                         tema = _tema.value,
-                        tarjetas = _listaTarjetas.value,
+                        tarjetas = tarjetasProcesadas, // Usamos las procesadas
                         cuestionariosTemporales = cuestionariosParaRepo
                     )
+                    val leccionExistente = repositorio.obtenerLeccionPorId(_idLeccionEdicion!!)
+                    if (leccionExistente != null) {
+                         repositorio.insertarLeccion(leccionExistente.copy(
+                             titulo = _titulo.value,
+                             tema = _tema.value,
+                             imagenUrl = pathPortadaFinal ?: leccionExistente.imagenUrl
+                         ))
+                    }
+                    
                     _mensajeUsuario.value = "Lección actualizada con éxito"
                 } else {
 
@@ -150,12 +189,12 @@ class CrearLeccionViewModel(
                         fechaCreacion = System.currentTimeMillis(),
                         creadaPorUsuario = true,
                         uuidAutorOriginal = uuid,
-                        imagenUrl = null
+                        imagenUrl = pathPortadaFinal // Guardamos la ruta final
                     )
 
                     val idLeccionGenerado = repositorio.insertarLeccion(nuevaLeccion)
 
-                    val tarjetasFinales = _listaTarjetas.value.map { tarjeta ->
+                    val tarjetasFinales = tarjetasProcesadas.map { tarjeta -> // Usamos las procesadas
                         tarjeta.copy(idLeccion = idLeccionGenerado.toInt())
                     }
 
@@ -183,6 +222,7 @@ class CrearLeccionViewModel(
 
             } catch (e: Exception) {
                 _mensajeUsuario.value = "Error al guardar: ${e.localizedMessage}"
+                e.printStackTrace()
             }
         }
     }
@@ -215,7 +255,6 @@ class CrearLeccionViewModel(
         )
         val preguntaConRespuestas = PreguntaConRespuestas(nuevaPregunta, respuestas)
 
-        // Actualizamos la lista de cuestionarios modificando SOLO el activo
         _listaCuestionarios.value = _listaCuestionarios.value.map { cuestionario ->
             if (cuestionario.idTemporal == idActivo) {
                 cuestionario.copy(preguntas = cuestionario.preguntas + preguntaConRespuestas)
@@ -252,6 +291,12 @@ class CrearLeccionViewModel(
             }
 
             val (tarjetasBD, cuestionariosBD) = repositorio.obtenerLeccionConCuestionarios(idLeccion)
+
+            if (leccion != null) {
+                _titulo.value = leccion.titulo
+                _tema.value = leccion.tema
+                _imagenPortada.value = leccion.imagenUrl
+            }
 
             _listaTarjetas.value = tarjetasBD
             //a cada uno de los cuestionarios, le asigamos nuevos datos y se asigna a borradores

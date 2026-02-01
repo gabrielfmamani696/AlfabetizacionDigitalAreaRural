@@ -279,6 +279,10 @@ class RepositorioApp(
     suspend fun obtenerLeccionPorId(id: Int): EntidadLeccion? {
         return leccionDao.obtenerLeccionPorId(id)
     }
+
+    suspend fun eliminarLeccionPorId(id: Int) {
+        leccionDao.eliminarLeccionPorId(id)
+    }
 }
 data class CuestionarioConPreguntas(
     val cuestionario: EntidadCuestionario,

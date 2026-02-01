@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -22,6 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
@@ -32,7 +36,8 @@ fun ItemLeccion(
     leccion: EntidadLeccion,
     onClick: () -> Unit,
     onEditar: () -> Unit,
-    onBorrar: () -> Unit
+    onBorrar: () -> Unit,
+    onCompartir: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -49,18 +54,31 @@ fun ItemLeccion(
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "IMG",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
+            // Imagen de Portada con Coil
+            if (leccion.imagenUrl != null) {
+                coil.compose.AsyncImage(
+                    model = leccion.imagenUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(android.R.drawable.ic_menu_report_image)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "IMG",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(Inclusivo.ESPACIADO_ESTANDAR))
             Column(
@@ -83,10 +101,10 @@ fun ItemLeccion(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = { /* TODO: Compartir */ }) {
+                IconButton(onClick = onCompartir) {
                     Icon(Icons.Default.Share, contentDescription = "Boton de Compartir")
                 }
-                IconButton(onClick = onEditar   ) {
+                IconButton(onClick = onEditar) {
                     Icon(Icons.Default.Edit, contentDescription = "Boton de Editar")
                 }
                 IconButton(onClick = onBorrar) {

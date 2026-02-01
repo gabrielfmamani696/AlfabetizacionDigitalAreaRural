@@ -1,5 +1,6 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -121,7 +122,8 @@ fun PantallaCrearLeccion(
                 if (pasoActual < totalPasos) {
                     Button(onClick = { pasoActual++ }) { Text("Siguiente") }
                 } else {
-                    Button(onClick = { viewModel.guardarLeccion() }) { Text("Guardar Todo") }
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    Button(onClick = { viewModel.guardarLeccion(context) }) { Text("Guardar Todo") }
                 }
             }
         }
@@ -129,10 +131,16 @@ fun PantallaCrearLeccion(
         Box(modifier = Modifier.padding(padding).padding(16.dp).fillMaxSize()) {
 
             when (pasoActual) {
-                1 -> Lecciones(
-                    titulo = titulo, onTituloChange = { viewModel.actualizarTitulo(it) },
-                    tema = tema, onTemaChange = { viewModel.actualizarTema(it) }
-                )
+                1 -> {
+                    // Obtenemos el estado de la imagen de portada
+                    val imagenPortada by viewModel.imagenPortada.collectAsState()
+                    Lecciones(
+                        titulo = titulo, onTituloChange = { viewModel.actualizarTitulo(it) },
+                        tema = tema, onTemaChange = { viewModel.actualizarTema(it) },
+                        imagenPortada = imagenPortada,
+                        onImagenPortadaChange = { uri -> viewModel.actualizarImagenPortada(uri) }
+                    )
+                }
                 2 -> Tarjetas(
                     listaTarjetas = tarjetas,
                     onAgregar = { t, tipo, data -> viewModel.agregarTarjeta(t, tipo, data) },
@@ -156,10 +164,64 @@ fun PantallaCrearLeccion(
 @Composable
 fun Lecciones(
     titulo: String, onTituloChange: (String) -> Unit,
-    tema: String, onTemaChange: (String) -> Unit
+    tema: String, onTemaChange: (String) -> Unit,
+    imagenPortada: String?,
+    onImagenPortadaChange: (String?) -> Unit
 ) {
+    val launcherPortada = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        onImagenPortadaChange(uri?.toString())
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Información General", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable {
+                    launcherPortada.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (imagenPortada != null) {
+                coil.compose.AsyncImage(
+                    model = imagenPortada,
+                    contentDescription = "Portada",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                // Botón para quitar imagen
+                IconButton(
+                    onClick = { onImagenPortadaChange(null) },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha=0.5f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, null, tint = Color.White)
+                }
+            } else {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.Image, 
+                        contentDescription = null, 
+                        modifier = Modifier.size(50.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "Toca para agregar Portada", 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
         Spacer(Modifier.height(16.dp))
         
         OutlinedTextField(
@@ -185,7 +247,7 @@ fun Tarjetas(
     onEliminar: (Int) -> Unit
 ) {
     var contenido by remember { mutableStateOf("") }
-    var imagenUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var imagenUri by remember { mutableStateOf<Uri?>(null) }
 
     val colores = listOf(
         "#2196F3" to Color(0xFF2196F3),

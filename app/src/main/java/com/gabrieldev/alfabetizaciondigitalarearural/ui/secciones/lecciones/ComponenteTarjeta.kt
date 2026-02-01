@@ -52,6 +52,7 @@ fun ComponenteTarjeta(
                         "drawable",
                         context.packageName
                     )
+
                     if (resId != 0) {
                         Image(
                             painter = painterResource(id = resId),
@@ -59,22 +60,22 @@ fun ComponenteTarjeta(
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f))
-                        )
                     } else {
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.errorContainer)
-                        ) {
-                            Text("Imagen no encontrada: ${tarjeta.dataFondo}", modifier = Modifier.align(Alignment.Center))
-                        }
+                        // Intentamos cargar como ruta o URI
+                        coil.compose.AsyncImage(
+                            model = tarjeta.dataFondo,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            error = painterResource(android.R.drawable.ic_menu_report_image) // Fallback simple
+                        )
                     }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f))
+                    )
                 }
                 else -> {
                     Box(
