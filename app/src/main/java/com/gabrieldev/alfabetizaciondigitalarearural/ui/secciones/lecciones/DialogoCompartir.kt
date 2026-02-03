@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gabrieldev.alfabetizaciondigitalarearural.data.remote.ManejadorNearby
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.DisposableEffect
 
 @Composable
 fun DialogoCompartir(
@@ -47,6 +48,13 @@ fun DialogoCompartir(
             manejador.hacerVisible(nombreUsuario)
         }
     }
+
+    DisposableEffect (Unit) {
+        onDispose {
+            manejador.detenerTodo()
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {

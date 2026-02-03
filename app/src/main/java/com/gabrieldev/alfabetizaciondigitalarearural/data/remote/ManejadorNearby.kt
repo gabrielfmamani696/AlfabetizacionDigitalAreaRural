@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.nio.charset.StandardCharsets
 
-class ManejadorNearby(private val context: Context) {
+class ManejadorNearby(
+    private val context: Context
+) {
 
     private val STRATEGY = Strategy.P2P_STAR
     private val SERVICE_ID = "com.gabrieldev.alfabetizaciondigitalarearural"

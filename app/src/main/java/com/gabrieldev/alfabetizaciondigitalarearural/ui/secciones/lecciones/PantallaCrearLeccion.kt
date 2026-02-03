@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -120,9 +121,14 @@ fun PantallaCrearLeccion(
                 Spacer(Modifier.weight(1f))
 
                 if (pasoActual < totalPasos) {
-                    Button(onClick = { pasoActual++ }) { Text("Siguiente") }
+                    Button(
+                        onClick = { pasoActual++ },
+                        enabled = if (pasoActual == 1) titulo.isNotBlank() else true
+                    ) { 
+                        Text("Siguiente") 
+                    }
                 } else {
-                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val context = LocalContext.current
                     Button(onClick = { viewModel.guardarLeccion(context) }) { Text("Guardar Todo") }
                 }
             }
@@ -174,7 +180,11 @@ fun Lecciones(
         onImagenPortadaChange(uri?.toString())
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+    ) {
         Text("Información General", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
 

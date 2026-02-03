@@ -1,5 +1,7 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones
 
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,12 +45,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
+import com.gabrieldev.alfabetizaciondigitalarearural.data.remote.LeccionTransferible
 import com.gabrieldev.alfabetizaciondigitalarearural.data.remote.ManejadorNearby
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.Inclusivo
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
+import com.gabrieldev.alfabetizaciondigitalarearural.utils.ImageHelper
 import kotlinx.coroutines.launch
 
 @Composable
@@ -65,7 +71,7 @@ fun PantallaLecciones(
     var leccionParaBorrar by remember { mutableStateOf<EntidadLeccion?>(null) }
 
     // para el dialogo de confirmacion
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val context = LocalContext.current
 
@@ -74,7 +80,7 @@ fun PantallaLecciones(
     // para el dialogo de compartir
     var mostrarDialogoCompartir by remember { mutableStateOf(false) }
     var esModoEmisor by remember { mutableStateOf(true) }
-    var leccionACompartir by remember { mutableStateOf<EntidadLeccion?>(null) } // Si es null, es modo recibir
+    var leccionACompartir by remember { mutableStateOf<EntidadLeccion?>(null) }
 
     val permisosLauncher = rememberLauncherForActivityResult (
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -91,11 +97,11 @@ fun PantallaLecciones(
     )
 
     //pedir permisos y abrir dialogo
-    val abrirCompartir = {emisor: Boolean, leccion: EntidadLeccion? ->
+    val abrirCompartir = { emisor: Boolean, leccion: EntidadLeccion? ->
         esModoEmisor = emisor
         leccionACompartir = leccion
 
-        //permisos segun version
+        //permisos
         val permisosRequeridos = when {
             // Android 13+ (API 33) necesita NEARBY_WIFI_DEVICES
             android.os.Build.VERSION.SDK_INT >= 33 -> {
@@ -104,7 +110,7 @@ fun PantallaLecciones(
                     android.Manifest.permission.BLUETOOTH_SCAN,
                     android.Manifest.permission.BLUETOOTH_CONNECT,
                     android.Manifest.permission.ACCESS_FINE_LOCATION,
-                    android.Manifest.permission.NEARBY_WIFI_DEVICES // ¡Este faltaba!
+                    android.Manifest.permission.NEARBY_WIFI_DEVICES
                 )
             }
             // Android 12 (API 31/32)
@@ -119,21 +125,46 @@ fun PantallaLecciones(
             // Android 11 o inferior
             else -> {
                 arrayOf(
-                    android.Manifest.permission.BLUETOOTH,
-                    android.Manifest.permission.BLUETOOTH_ADMIN,
                     android.Manifest.permission.ACCESS_FINE_LOCATION,
                     android.Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             }
         }
-        permisosLauncher.launch(permisosRequeridos)
+
+        // tenemos todos los permisos?
+        val todosOtorgados = permisosRequeridos.all { permiso ->
+            ContextCompat.checkSelfPermission(
+                context,
+                permiso
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+
+        if (todosOtorgados) {
+            val puedeCompartir = if (android.os.Build.VERSION.SDK_INT < 31) {
+                val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+                locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+                        locationManager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+            } else {
+                true
+            }
+            
+            if (puedeCompartir) {
+                mostrarDialogoCompartir = true
+            } else {
+                scope.launch {
+                    snackbarHostState.showSnackbar("Por favor, activa la ubicación en tu dispositivo para compartir")
+                }
+            }
+        } else {
+            permisosLauncher.launch(permisosRequeridos)
+        }
     }
 
     // Obtenemos las lecciones del repositorio
     val listaLecciones by produceState<List<EntidadLeccion>>(
         initialValue = emptyList(),
         key1 = updateTrigger
-        )
+    )
     {
         value = repositorio.obtenerLecciones()
     }
@@ -141,7 +172,6 @@ fun PantallaLecciones(
     val leccionesFiltradas = if (textoBusqueda.isBlank()) {
         listaLecciones
     } else {
-        // filtro en memoria
         listaLecciones.filter {
             it.titulo.contains(textoBusqueda, ignoreCase = true) ||
             it.tema.contains(textoBusqueda, ignoreCase = true)
@@ -273,7 +303,7 @@ fun PantallaLecciones(
         if (mostrarDialogoCompartir) {
             val usuario = repositorio.ultimoUsuario.collectAsState(initial = null).value
             val nombreBase = usuario?.alias ?: "Usuario"
-            val nombreDispositivo = "${nombreBase} (${android.os.Build.MODEL})" // Ej: Gabriel (Samsung S21)
+            val nombreDispositivo = "$nombreBase (${Build.MODEL})"
 
             DialogoCompartir(
                 manejador = manejador,
@@ -281,19 +311,37 @@ fun PantallaLecciones(
                 nombreUsuario = nombreDispositivo,
                 onDismiss = {
                     mostrarDialogoCompartir = false
-                    manejador.detenerTodo()
                 },
                 onDispositivoSeleccionado = { endpointId ->
                     if (esModoEmisor && leccionACompartir != null) {
                         scope.launch {
                             val (tarjetas, cuestionarios) = repositorio.obtenerLeccionConCuestionarios(leccionACompartir!!.idLeccion)
+                            val imagenPortadaBase64 = ImageHelper.imagenABase64(
+                                context,
+                                leccionACompartir!!.imagenUrl
+                            )
 
-                            val paquete = com.gabrieldev.alfabetizaciondigitalarearural.data.remote.LeccionTransferible(
+                            val imagenesTarjetasBase64 = mutableMapOf<Int, String>()
+                            tarjetas.forEach { tarjeta ->
+                                if (tarjeta.tipoFondo == "IMAGEN") {
+                                    val imagenBase64 = ImageHelper.imagenABase64(
+                                        context,
+                                        tarjeta.dataFondo
+                                    )
+                                    if (imagenBase64 != null) {
+                                        imagenesTarjetasBase64[tarjeta.ordenSecuencia] = imagenBase64
+                                    }
+                                }
+                            }
+
+                            val paquete = LeccionTransferible(
                                 leccion = leccionACompartir!!,
                                 tarjetas = tarjetas,
-                                cuestionarios = cuestionarios
+                                cuestionarios = cuestionarios,
+                                imagenPortadaBase64 = imagenPortadaBase64,
+                                imagenesTarjetasBase64 = imagenesTarjetasBase64
                             )
-                            // Usamos la nueva función que conecta Y LUEGO envía
+
                             manejador.conectarYEnviar(endpointId, paquete)
                         }
                     } else {
@@ -306,23 +354,58 @@ fun PantallaLecciones(
             LaunchedEffect(Unit) {
                 manejador.onLeccionRecibida = { paquete ->
                     scope.launch {
+                        var rutaPortadaGuardada: String? = null
+
+                        if (paquete.imagenPortadaBase64 != null) {
+                            val nombreArchivo = "portada_${System.currentTimeMillis()}.jpg"
+                            rutaPortadaGuardada = ImageHelper.base64AImagen(
+                                context,
+                                paquete.imagenPortadaBase64,
+                                nombreArchivo
+                            )
+                        }
 
                         val idNueva = repositorio.insertarLeccion(paquete.leccion.copy(
                             idLeccion = 0,
                             titulo = "${paquete.leccion.titulo} (Recibida)",
-                            creadaPorUsuario = false
+                            creadaPorUsuario = false,
+                            imagenUrl = rutaPortadaGuardada
                         )).toInt()
-                        // Guardar tarjetas
-                        val tarjetasNuevas = paquete.tarjetas.map { it.copy(idTarjeta = 0, idLeccion = idNueva) }
+
+                        val tarjetasNuevas = paquete.tarjetas.map { tarjeta ->
+                            var rutaImagenTarjeta = tarjeta.dataFondo
+
+                            if (tarjeta.tipoFondo == "IMAGEN" && paquete.imagenesTarjetasBase64.containsKey(tarjeta.ordenSecuencia)) {
+                                val base64 = paquete.imagenesTarjetasBase64[tarjeta.ordenSecuencia]
+                                if (base64 != null) {
+                                    val nombreArchivo = "tarjeta_${idNueva}_${tarjeta.ordenSecuencia}.jpg"
+                                    val rutaGuardada = ImageHelper.base64AImagen(
+                                        context,
+                                        base64,
+                                        nombreArchivo
+                                    )
+                                    if (rutaGuardada != null) {
+                                        rutaImagenTarjeta = rutaGuardada
+                                    }
+                                }
+                            }
+
+                            tarjeta.copy(
+                                idTarjeta = 0,
+                                idLeccion = idNueva,
+                                dataFondo = rutaImagenTarjeta
+                            )
+                        }
+
                         tarjetasNuevas.forEach { repositorio.insertarTarjeta(it) }
-                        // Guardar cuestionarios
+
                         paquete.cuestionarios.forEach { q ->
                             val nuevoCuestionario = q.cuestionario.copy(idCuestionario = 0, idLeccion = idNueva)
                             repositorio.insertarCuestionarioCompleto(nuevoCuestionario, q.preguntas)
                         }
+
                         mostrarDialogoCompartir = false
                         manejador.detenerTodo()
-
                         snackbarHostState.showSnackbar("¡Lección recibida e importada con éxito!")
                         updateTrigger++
                     }

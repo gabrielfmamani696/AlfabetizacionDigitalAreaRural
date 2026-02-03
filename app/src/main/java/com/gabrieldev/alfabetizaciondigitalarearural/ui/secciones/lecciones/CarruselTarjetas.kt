@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,7 +41,7 @@ fun CarruselTarjetas(
         value = repositorio.obtenerTarjetasPorLeccion(idLeccion)
     }
     val pagerState = rememberPagerState(pageCount = { tarjetas.value.size })
-    val tomarExamen = remember { androidx.compose.runtime.mutableStateOf(false) }
+    val tomarExamen = remember { mutableStateOf(false) }
 
     val usuarioState = repositorio.ultimoUsuario.collectAsState(initial = null)
     val usuario = usuarioState.value

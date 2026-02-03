@@ -29,9 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             // precarga
             LaunchedEffect(Unit) {
-                repositorio.defaultLecciones()
-                repositorio.defaultTarjetas()
-                repositorio.defaultCuestionarios()
+                repositorio.defaultLeccionesIncorporacion()
             }
             AlfabetizacionDigitalAreaRuralTheme {
                 //cambio de estado en base a presencia de usuario
