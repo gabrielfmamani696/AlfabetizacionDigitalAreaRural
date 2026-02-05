@@ -459,6 +459,14 @@ class RepositorioApp(
     suspend fun eliminarLeccionPorId(id: Int) {
         leccionDao.eliminarLeccionPorId(id)
     }
+
+    suspend fun obtenerPromedioDeLeccion(idUsuario: Int, idLeccion: Int): Double {
+        return intentoLeccionDao.obtenerPromedioPorLeccionEspecifica(idUsuario, idLeccion) ?: 0.0
+    }
+
+    suspend fun obtenerLeccionesRealizadasPorUsuario(idUsuario: Int): List<EntidadLeccion> {
+        return intentoLeccionDao.obtenerLeccionesRealizadasPorUsuario(idUsuario)
+    }
 }
 data class CuestionarioConPreguntas(
     val cuestionario: EntidadCuestionario,
