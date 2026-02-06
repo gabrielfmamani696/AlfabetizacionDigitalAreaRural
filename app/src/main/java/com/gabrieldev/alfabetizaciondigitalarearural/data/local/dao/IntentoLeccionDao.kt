@@ -12,7 +12,12 @@ interface IntentoLeccionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarIntento(intento: EntidadIntentoLeccion)
 
-    @Query("SELECT * FROM intentos_leccion WHERE id_usuario = :idUsuario ORDER BY fecha_intento DESC")
+    @Query(
+    "SELECT * " +
+            "FROM intentos_leccion " +
+            "WHERE id_usuario = :idUsuario " +
+            "ORDER BY fecha_intento DESC"
+    )
     suspend fun obtenerIntentosPorUsuario(idUsuario: Int): List<EntidadIntentoLeccion>
 
     @Query("SELECT * FROM intentos_leccion WHERE id_usuario = :idUsuario AND id_leccion = :idLeccion ORDER BY calificacion_obtenida DESC LIMIT 1")
@@ -22,7 +27,8 @@ interface IntentoLeccionDao {
         "SELECT AVG(calificacion_obtenida) " +
             "FROM intentos_leccion " +
             "WHERE id_usuario = :idUsuario " +
-            "AND id_leccion = :idLeccion")
+            "AND id_leccion = :idLeccion"
+    )
     suspend fun obtenerPromedioPorLeccionEspecifica(idUsuario: Int, idLeccion: Int): Double?
 
     @Query(

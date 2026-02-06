@@ -467,7 +467,25 @@ class RepositorioApp(
     suspend fun obtenerLeccionesRealizadasPorUsuario(idUsuario: Int): List<EntidadLeccion> {
         return intentoLeccionDao.obtenerLeccionesRealizadasPorUsuario(idUsuario)
     }
+
+    suspend fun obtenerEstadosLogros(idUsuario: Int): EstadoLogros {
+        val intentos = intentoLeccionDao.obtenerIntentosPorUsuario(idUsuario)
+
+        val cantidadLecciones = intentos.distinctBy { it.idLeccion }.size
+        //tiene 100 e algun intento?
+        val tieneCien = intentos.any { it.calificacionObtenida == 100 }
+
+        val listaLogros = mutableListOf<TipoLogro>()
+
+        if(cantidadLecciones >= 1) listaLogros.add(TipoLogro.PRIMERA_LECCION)
+        if (intentos.isNotEmpty()) listaLogros.add(TipoLogro.PRIMER_CUESTIONARIO)
+        if (tieneCien) listaLogros.add(TipoLogro.NOTA_PERFECTA)
+        if (cantidadLecciones >= 5) listaLogros.add(TipoLogro.COMPLETISTA)
+
+        return EstadoLogros(logrosDesbloqueados = listaLogros)
+    }
 }
+
 data class CuestionarioConPreguntas(
     val cuestionario: EntidadCuestionario,
     val preguntas: List<PreguntaConRespuestas>
@@ -476,4 +494,15 @@ data class CuestionarioConPreguntas(
 data class PreguntaConRespuestas(
     val pregunta: EntidadPregunta,
     val respuestas: List<EntidadRespuesta>
+)
+
+enum class TipoLogro {
+    PRIMERA_LECCION,
+    PRIMER_CUESTIONARIO,
+    NOTA_PERFECTA,
+    COMPLETISTA
+}
+
+data class EstadoLogros(
+    val logrosDesbloqueados: List<TipoLogro>
 )
