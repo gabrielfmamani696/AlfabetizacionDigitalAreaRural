@@ -97,7 +97,10 @@ fun PantallaPrincipal(
                     )
                 }
                 composable(Rutas.Perfil.ruta) {
-                    PantallaPerfil()
+                    PantallaPerfil(
+                        usuario = usuario,
+                        repositorio = repositorio
+                    )
                 }
                 composable(
                     route = Rutas.VisualizarTarjetas.ruta,
@@ -112,7 +115,6 @@ fun PantallaPrincipal(
                 }
                 composable(
                     route = Rutas.CrearLeccion.ruta,
-
                     arguments = listOf(
                         navArgument("idLeccion") {
                             type = NavType.IntType
