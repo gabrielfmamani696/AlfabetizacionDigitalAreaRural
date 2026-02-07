@@ -24,7 +24,7 @@ import androidx.navigation.navArgument
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.navegacion.Rutas
-import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaPerfil
+import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.perfilpersonal.PantallaPerfil
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.PantallaSeccionInicio
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.CarruselTarjetas
 import com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.lecciones.PantallaCrearLeccion

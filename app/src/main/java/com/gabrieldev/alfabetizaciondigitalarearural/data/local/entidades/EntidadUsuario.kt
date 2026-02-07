@@ -22,12 +22,18 @@ data class EntidadUsuario(
     @ColumnInfo(name = "ultima_actividad")
     val ultimaActividad: Long,
 
-    @ColumnInfo(name = "vio_onboarding_consumo")
-    val vioOnboardingConsumo: Boolean = false,
-
-    @ColumnInfo(name = "vio_onboarding_creacion")
-    val vioOnboardingCreacion: Boolean = false,
-
     @ColumnInfo(name = "uuid_usuario")
-    val uuidUsuario: String
+    val uuidUsuario: String,
+
+    @ColumnInfo(name = "activo")
+    val activo: Boolean = false,
+
+    @ColumnInfo(name = "notificaciones_habilitadas")
+    val notificacionesHabilitadas: Boolean = true,
+
+    @ColumnInfo(name = "hora_notificacion")
+    val horaNotificacion: Int = 18,
+
+    @ColumnInfo(name = "minuto_notificacion")
+    val minutoNotificacion: Int = 0,
 )

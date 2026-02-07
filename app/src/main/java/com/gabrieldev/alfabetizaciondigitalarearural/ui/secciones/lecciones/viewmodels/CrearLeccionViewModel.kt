@@ -177,7 +177,7 @@ class CrearLeccionViewModel(
                     _mensajeUsuario.value = "Lección actualizada con éxito"
                 } else {
 
-                    val usuario = repositorio.ultimoUsuario.firstOrNull()
+                    val usuario = repositorio.usuarioActivo.firstOrNull()
                     val alias = usuario?.alias ?: "Desconocido"
                     val uuid = usuario?.uuidUsuario ?: "local"
 

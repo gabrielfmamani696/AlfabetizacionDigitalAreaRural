@@ -301,7 +301,7 @@ fun PantallaLecciones(
 
         // Diálogo de Nearby Connections
         if (mostrarDialogoCompartir) {
-            val usuario = repositorio.ultimoUsuario.collectAsState(initial = null).value
+            val usuario = repositorio.usuarioActivo.collectAsState(initial = null).value
             val nombreBase = usuario?.alias ?: "Usuario"
             val nombreDispositivo = "$nombreBase (${Build.MODEL})"
 

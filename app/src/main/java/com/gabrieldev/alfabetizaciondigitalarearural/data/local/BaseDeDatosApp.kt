@@ -7,11 +7,13 @@ import androidx.room.RoomDatabase
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.CuestionarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.IntentoLeccionDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LeccionDao
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LogroNotificadoDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.TarjetaDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.UsuarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadCuestionario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadIntentoLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLogroNotificado
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
@@ -24,8 +26,12 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.Entida
     EntidadTarjeta::class,
     EntidadCuestionario::class,
     EntidadPregunta::class,
-    EntidadRespuesta::class
-    ], version = 4, exportSchema = false)
+    EntidadRespuesta::class,
+    EntidadLogroNotificado::class,
+    ],
+    version = 5,
+    exportSchema = false
+)
 abstract class BaseDeDatosApp : RoomDatabase() {
     //implememntar dao
     abstract fun usuarioDao(): UsuarioDao
@@ -33,8 +39,9 @@ abstract class BaseDeDatosApp : RoomDatabase() {
     abstract fun intentoLeccionDao(): IntentoLeccionDao
     abstract fun tarjetaDao(): TarjetaDao
     abstract fun cuestionarioDao(): CuestionarioDao
+    abstract fun logroNotificadoDao(): LogroNotificadoDao
 
-    // singleton
+    // singleton, unica instancia de la clase asegurada
     companion object {
         @Volatile
         private var INSTANCE: BaseDeDatosApp? = null
@@ -49,7 +56,7 @@ abstract class BaseDeDatosApp : RoomDatabase() {
                     BaseDeDatosApp::class.java,
                     "alfabetizacion_rural_db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
 
                 INSTANCE = instance

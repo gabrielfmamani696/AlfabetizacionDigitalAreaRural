@@ -24,7 +24,8 @@ class MainActivity : ComponentActivity() {
             baseDeDatos.leccionDao(),
             baseDeDatos.tarjetaDao(),
             baseDeDatos.cuestionarioDao(),
-            baseDeDatos.intentoLeccionDao()
+            baseDeDatos.intentoLeccionDao(),
+            baseDeDatos.logroNotificadoDao()
         )
         setContent {
             // precarga
@@ -33,7 +34,7 @@ class MainActivity : ComponentActivity() {
             }
             AlfabetizacionDigitalAreaRuralTheme {
                 //cambio de estado en base a presencia de usuario
-                val usuarioGuardado by repositorio.ultimoUsuario.collectAsState(initial = null)
+                val usuarioGuardado by repositorio.usuarioActivo.collectAsState(initial = null)
 
                 if (usuarioGuardado != null) {
                     PantallaPrincipal(
@@ -44,7 +45,6 @@ class MainActivity : ComponentActivity() {
                     PantallaRegistroUsuario(
                         repositorio = repositorio,
                         alTerminar = {
-                            // Al guardar, el Flow se actualiza solo y entrará al 'if' de arriba
                         }
                     )
                 }

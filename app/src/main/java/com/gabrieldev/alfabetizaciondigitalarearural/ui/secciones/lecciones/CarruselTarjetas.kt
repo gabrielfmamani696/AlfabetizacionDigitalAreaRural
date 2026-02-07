@@ -43,7 +43,7 @@ fun CarruselTarjetas(
     val pagerState = rememberPagerState(pageCount = { tarjetas.value.size })
     val tomarExamen = remember { mutableStateOf(false) }
 
-    val usuarioState = repositorio.ultimoUsuario.collectAsState(initial = null)
+    val usuarioState = repositorio.usuarioActivo.collectAsState(initial = null)
     val usuario = usuarioState.value
 
     if (tomarExamen.value && usuario != null) {

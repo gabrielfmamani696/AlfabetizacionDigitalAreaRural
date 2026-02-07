@@ -3,15 +3,19 @@ package com.gabrieldev.alfabetizaciondigitalarearural.data.repository
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.CuestionarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.IntentoLeccionDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LeccionDao
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LogroNotificadoDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.TarjetaDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.UsuarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadCuestionario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadIntentoLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLogroNotificado
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadPregunta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadRespuesta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadTarjeta
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.modelos.EstadoLogros
+import com.gabrieldev.alfabetizaciondigitalarearural.data.local.modelos.TipoLogro
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -22,19 +26,77 @@ class RepositorioApp(
     private val tarjetaDao: TarjetaDao,
     private val cuestionarioDao: CuestionarioDao,
     private val intentoLeccionDao: IntentoLeccionDao,
+    private val logroNotificadoDao: LogroNotificadoDao,
     ) {
 
     // Obtener el usuario activo (para la pantalla principal)
-    val ultimoUsuario: Flow<EntidadUsuario?> = usuarioDao.obtenerUltimoUsuario()
+    val usuarioActivo: Flow<EntidadUsuario?> = usuarioDao.obtenerUsuarioActivo()
 
     // Crear un nuevo usuario
     suspend fun crearUsuario(nombre: String, avatarId: Int = 0) {
+
+        // Verificar si es el primer usuario
+        val usuariosExistentes = usuarioDao.obtenerTodosLosUsuarios()
+        val esPrimerUsuario = usuariosExistentes.isEmpty()
+
         val nuevoUsuario = EntidadUsuario(
             alias = nombre,
             ultimaActividad = System.currentTimeMillis(),
-            uuidUsuario = UUID.randomUUID().toString()
+            uuidUsuario = UUID.randomUUID().toString(),
+            activo = esPrimerUsuario
         )
         usuarioDao.insertarUsuario(nuevoUsuario)
+    }
+
+    suspend fun cambiarUsuarioActivo(idUsuario: Int) {
+        usuarioDao.desactivarTodosLosUsuarios()
+        usuarioDao.activarUsuario(idUsuario)
+    }
+
+    suspend fun obtenerTodosLosUsuarios(): List<EntidadUsuario> {
+        return usuarioDao.obtenerTodosLosUsuarios()
+    }
+
+    suspend fun actualizarConfiguracionNotificaciones(
+        idUsuario: Int,
+        habilitadas: Boolean,
+        hora: Int,
+        minuto: Int
+    ) {
+        usuarioDao.actualizarConfiguracionNotificaciones(idUsuario, habilitadas, hora, minuto)
+    }
+
+    suspend fun marcarLogroComoNotificado(idUsuario: Int, logro: TipoLogro) {
+        val entidadLN = EntidadLogroNotificado(
+            idUsuario = idUsuario,
+            tipoLogro = logro.name
+        )
+        logroNotificadoDao.marcarComoNotificado(entidadLN)
+    }
+
+    suspend fun obtenerLogrosNuevos(idUsuario: Int): List<TipoLogro> {
+        val estadoActual = obtenerEstadosLogros(idUsuario)
+
+        return estadoActual.logrosDesbloqueados.filter { logro ->
+            !logroNotificadoDao.fueNotificado(idUsuario, logro.name)
+        }
+    }
+
+    fun usuarioInactivoPorDias(usuario: EntidadUsuario, dias: Int): Boolean {
+        val milisegundosPorDia = 24 * 60 * 60 * 1000L
+        val tiempoInactivo = System.currentTimeMillis() - usuario.ultimaActividad
+        return tiempoInactivo > (dias * milisegundosPorDia)
+    }
+    /**
+     * Actualiza la última actividad del usuario al momento actual.
+     * Llamar cada vez que el usuario interactúe con la app.
+     */
+    suspend fun actualizarUltimaActividad(idUsuario: Int) {
+        // Necesitarás agregar esta query en UsuarioDao:
+        // @Query("UPDATE usuarios SET ultima_actividad = :timestamp WHERE id_usuario = :idUsuario")
+        // suspend fun actualizarUltimaActividad(idUsuario: Int, timestamp: Long)
+
+        usuarioDao.actualizarUltimaActividad(idUsuario, System.currentTimeMillis())
     }
 
     suspend fun existeAlgunUsuario(): Boolean {
@@ -494,15 +556,4 @@ data class CuestionarioConPreguntas(
 data class PreguntaConRespuestas(
     val pregunta: EntidadPregunta,
     val respuestas: List<EntidadRespuesta>
-)
-
-enum class TipoLogro {
-    PRIMERA_LECCION,
-    PRIMER_CUESTIONARIO,
-    NOTA_PERFECTA,
-    COMPLETISTA
-}
-
-data class EstadoLogros(
-    val logrosDesbloqueados: List<TipoLogro>
 )
