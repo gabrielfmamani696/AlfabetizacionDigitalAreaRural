@@ -43,6 +43,7 @@ fun PantallaPrincipal(
     Scaffold(
         bottomBar = {
             NavigationBar {
+
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Home, contentDescription = "Inicio") },
                     label = { Text("Inicio") },
@@ -55,6 +56,7 @@ fun PantallaPrincipal(
                         }
                     }
                 )
+
                 NavigationBarItem(
                     icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lecciones") },
                     label = { Text("Lecciones") },
@@ -67,6 +69,7 @@ fun PantallaPrincipal(
                         }
                     }
                 )
+
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Person, contentDescription = "Perfil") },
                     label = { Text("Perfil") },
@@ -125,7 +128,7 @@ fun PantallaPrincipal(
                     // Recuperamos el ID que viene en la ruta
                     val idLeccion = backStackEntry.arguments?.getInt("idLeccion") ?: 0
 
-                    // Se lo pasamos a la pantalla
+                    // lo pasamos a la pantalla
                     PantallaCrearLeccion (
                         repositorio = repositorio,
                         onNavigateBack = { navController.popBackStack() },

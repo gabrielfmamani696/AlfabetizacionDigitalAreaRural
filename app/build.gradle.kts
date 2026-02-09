@@ -1,4 +1,4 @@
-/* 
+/*
 Generally,
 a build script (build.gradle(.kts)) details
 build configuration, tasks, and plugins.
@@ -61,18 +61,18 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     val roomVersion = "2.8.4"
-//    libreria de navegacion - navigation
+    //libreria de navegacion - navigation
     implementation(libs.androidx.navigation.compose)
-//    libreria para la bd - room
+    //libreria para la bd - room
     implementation("androidx.room:room-runtime:${roomVersion}")
     // If this project uses any Kotlin source, use Kotlin Symbol Processing (KSP)
     // See Add the KSP plugin to your project
     ksp("androidx.room:room-compiler:$roomVersion")
-//    Coroutine Image Loader, imagenes cargadas en segundo plano
+    // Coroutine Image Loader, imagenes cargadas en segundo plano
     implementation(libs.coil.compose)
     // optional - Kotlin Extensions and Coroutines support for Room
     implementation("androidx.room:room-ktx:${roomVersion}")
-    // Iconos extendidos (para el Rayo, etc.)
+    // Iconos extendidos (para el Rayo)
     implementation("androidx.compose.material:material-icons-extended")
 
     // dependencias Nearby Connections
@@ -80,4 +80,7 @@ dependencies {
 
     // GSON
     implementation("com.google.code.gson:gson:2.10.1")
+
+    //Libreria WorkManager
+    implementation("androidx.work:work-runtime:2.11.1")
 }

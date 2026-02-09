@@ -1,5 +1,9 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.data.repository
 
+import android.content.Context
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.CuestionarioDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.IntentoLeccionDao
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.dao.LeccionDao
@@ -16,8 +20,11 @@ import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.Entida
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.modelos.EstadoLogros
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.modelos.TipoLogro
+import com.gabrieldev.alfabetizaciondigitalarearural.data.workers.NotificacionWorker
 import kotlinx.coroutines.flow.Flow
+import java.util.Calendar
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 //intermediario de datos
 class RepositorioApp(
@@ -545,6 +552,48 @@ class RepositorioApp(
         if (cantidadLecciones >= 5) listaLogros.add(TipoLogro.COMPLETISTA)
 
         return EstadoLogros(logrosDesbloqueados = listaLogros)
+    }
+
+    fun programarNotificacionDiaria(
+        context: Context,
+        hora: Int,
+        minuto: Int
+    ) {
+        val ahora = Calendar.getInstance()
+
+        val objetivo = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hora)
+            set(Calendar.MINUTE, minuto)
+            set(Calendar.SECOND, 0)
+        }
+
+        if (objetivo.before(ahora)) {
+           objetivo.add(
+               Calendar.DAY_OF_YEAR,
+               1
+           )
+        }
+
+        val delayEnMilisegundos = objetivo.timeInMillis - ahora.timeInMillis
+
+        val solicitud = OneTimeWorkRequestBuilder<NotificacionWorker>().setInitialDelay(
+            delayEnMilisegundos,
+            TimeUnit.MILLISECONDS
+        ).build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(
+                "notificacion_diaria",
+                ExistingWorkPolicy.REPLACE,
+                solicitud
+            )
+    }
+
+    fun cancelarNotificaciones(
+        context: Context
+    ) {
+        WorkManager.getInstance(context)
+            .cancelUniqueWork("notificacion_diaria")
     }
 }
 

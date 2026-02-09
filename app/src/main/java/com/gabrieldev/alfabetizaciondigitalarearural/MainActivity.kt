@@ -1,5 +1,9 @@
 package com.gabrieldev.alfabetizaciondigitalarearural
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,6 +21,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        crearCanalNotificacion()
 
         val baseDeDatos = BaseDeDatosApp.obtenerBaseDeDatos(applicationContext)
         val repositorio = RepositorioApp(
@@ -49,6 +55,21 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+
+    private fun crearCanalNotificacion() {
+        //
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val nombre = "Recordatorio de Aprendizaje"
+            val descripcion = "Canal para recordatorios diarios de estudio"
+            val importancia = NotificationManager.IMPORTANCE_DEFAULT
+            val canal = NotificationChannel("CANAL_ALFABETIZACION", nombre, importancia).apply {
+                description = descripcion
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(canal)
         }
     }
 }

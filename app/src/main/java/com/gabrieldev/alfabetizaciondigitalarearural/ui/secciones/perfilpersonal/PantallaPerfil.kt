@@ -1,6 +1,13 @@
 package com.gabrieldev.alfabetizaciondigitalarearural.ui.secciones.perfilpersonal
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,8 +33,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,13 +49,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadLeccion
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.entidades.EntidadUsuario
 import com.gabrieldev.alfabetizaciondigitalarearural.data.local.modelos.TipoLogro
 import com.gabrieldev.alfabetizaciondigitalarearural.data.repository.RepositorioApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -75,6 +88,28 @@ fun PantallaPerfil(
 
     //corrutina
     val scope = rememberCoroutineScope()
+
+    val contexto = LocalContext.current
+
+    val solicitadorPermiso = rememberLauncherForActivityResult (
+        contract = ActivityResultContracts.RequestPermission()
+    ) { concedido ->
+        if (concedido) {
+            scope.launch {
+                repositorio.programarNotificacionDiaria(
+                    contexto,
+                    usuario.horaNotificacion,
+                    usuario.minutoNotificacion
+                )
+            }
+        } else {
+            Toast.makeText(
+                contexto,
+                "Necesitas permitir las notificaciones para recibir recordatorios",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     LaunchedEffect(
         usuario.idUsuario
@@ -288,9 +323,142 @@ fun PantallaPerfil(
 
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // s=establecer notificaciones
+            Text("Recordatorios", style = MaterialTheme.typography.titleMedium)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Estado local para los controles
+            var notificacionesActivas by remember { mutableStateOf(usuario.notificacionesHabilitadas) }
+            var horaSeleccionada by remember { mutableStateOf(usuario.horaNotificacion) }
+            var minutoSeleccionado by remember { mutableStateOf(usuario.minutoNotificacion) }
+//            val contexto = LocalContext.current
+
+            Card (
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column (modifier = Modifier.padding(16.dp)) {
+                    // sw
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Recordatorio diario")
+                        Switch (
+                            checked = notificacionesActivas,
+                            onCheckedChange = { activado ->
+                                notificacionesActivas = activado
+
+                                scope.launch {
+                                    repositorio.actualizarConfiguracionNotificaciones(
+                                        usuario.idUsuario,
+                                        activado,
+                                        horaSeleccionada,
+                                        minutoSeleccionado
+                                    )
+                                }
+
+                                if (activado) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        val tienePermiso = ContextCompat.checkSelfPermission(
+                                            contexto,
+                                            Manifest.permission.POST_NOTIFICATIONS
+                                        ) == PackageManager.PERMISSION_GRANTED
+
+                                        if (tienePermiso) {
+
+                                            repositorio.programarNotificacionDiaria(contexto, horaSeleccionada, minutoSeleccionado)
+                                        } else {
+
+                                            solicitadorPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                        }
+                                    } else {
+
+                                        repositorio.programarNotificacionDiaria(contexto, horaSeleccionada, minutoSeleccionado)
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    // Selectores de hora (solo si está activado)
+                    if (notificacionesActivas) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Hora del recordatorio:", style = MaterialTheme.typography.bodyMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row (
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // hora
+                            Column (horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text ("Hora", style = MaterialTheme.typography.labelSmall)
+                                Row (verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton (
+                                        onClick = {
+                                            horaSeleccionada = if (horaSeleccionada > 0) horaSeleccionada - 1 else 23
+                                            actualizarNotificacion(repositorio, usuario.idUsuario, notificacionesActivas, horaSeleccionada, minutoSeleccionado, contexto)
+                                        }
+                                    ) {
+                                        Text("-", style = MaterialTheme.typography.headlineSmall)
+                                    }
+                                    Text (
+                                        text = String.format("%02d", horaSeleccionada),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            horaSeleccionada = if (horaSeleccionada < 23) horaSeleccionada + 1 else 0
+                                            actualizarNotificacion(repositorio, usuario.idUsuario, notificacionesActivas, horaSeleccionada, minutoSeleccionado, contexto)
+                                        }
+                                    ) {
+                                        Text("+", style = MaterialTheme.typography.headlineSmall)
+                                    }
+                                }
+                            }
+
+                            // minuto
+                            Column (horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text ("Minuto", style = MaterialTheme.typography.labelSmall)
+                                Row (verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton (
+                                        onClick = {
+                                            minutoSeleccionado = if (minutoSeleccionado >= 5) minutoSeleccionado - 5 else 55
+                                            actualizarNotificacion(repositorio, usuario.idUsuario, notificacionesActivas, horaSeleccionada, minutoSeleccionado, contexto)
+                                        }
+                                    ) {
+                                        Text("-", style = MaterialTheme.typography.headlineSmall)
+                                    }
+                                    Text(
+                                        text = String.format("%02d", minutoSeleccionado),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        modifier = Modifier.padding(horizontal = 8.dp)
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            minutoSeleccionado = if (minutoSeleccionado < 55) minutoSeleccionado + 5 else 0
+                                            actualizarNotificacion(repositorio, usuario.idUsuario, notificacionesActivas, horaSeleccionada, minutoSeleccionado, contexto)
+                                        }
+                                    ) {
+                                        Text("+", style = MaterialTheme.typography.headlineSmall)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
+        //boton de calificaiones
         item {
             Button(
                 onClick = { mostrarCalificaciones = !mostrarCalificaciones },
@@ -368,6 +536,22 @@ fun ItemCalificacion(
                     modifier = Modifier.size(20.dp)
                 )
             }
+        }
+    }
+}
+
+private fun actualizarNotificacion(
+    repositorio: RepositorioApp,
+    idUsuario: Int,
+    habilitadas: Boolean,
+    hora: Int,
+    minuto: Int,
+    contexto: Context
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        repositorio.actualizarConfiguracionNotificaciones(idUsuario, habilitadas, hora, minuto)
+        if (habilitadas) {
+            repositorio.programarNotificacionDiaria(contexto, hora, minuto)
         }
     }
 }

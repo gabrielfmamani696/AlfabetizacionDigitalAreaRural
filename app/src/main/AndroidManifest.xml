@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permisos para WorkerManager -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Permisos para Nearby Connections (Android 12+ / API 31+) -->
     <!-- Se usan para conectar dispositivos sin ubicación precisa -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
