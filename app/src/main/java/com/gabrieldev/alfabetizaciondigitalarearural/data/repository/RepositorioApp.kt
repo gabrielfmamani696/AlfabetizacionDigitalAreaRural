@@ -73,6 +73,82 @@ class RepositorioApp(
         usuarioDao.actualizarConfiguracionNotificaciones(idUsuario, habilitadas, hora, minuto)
     }
 
+    suspend fun actualizarAliasUsuario(idUsuario: Int, nuevoAlias: String) {
+        usuarioDao.actualizarAlias(idUsuario, nuevoAlias)
+    }
+
+    suspend fun eliminarUsuario(idUsuario: Int): Boolean {
+        val todosLosUsuarios = usuarioDao.obtenerTodosLosUsuarios()
+        
+        // No permitir eliminar si es el único usuario
+        if (todosLosUsuarios.size <= 1) {
+            return false
+        }
+
+        val usuarioAEliminar = todosLosUsuarios.find { it.idUsuario == idUsuario }
+        
+        // Si el usuario a eliminar es el activo, activar otro
+        if (usuarioAEliminar?.activo == true) {
+            val otroUsuario = todosLosUsuarios.find { it.idUsuario != idUsuario }
+            otroUsuario?.let {
+                usuarioDao.activarUsuario(it.idUsuario)
+            }
+        }
+
+        usuarioDao.eliminarUsuario(idUsuario)
+        return true
+    }
+
+    suspend fun actualizarRachaUsuario(idUsuario: Int) {
+        val usuario = usuarioDao.obtenerUsuarioPorId(idUsuario) ?: return
+        val intentos = intentoLeccionDao.obtenerIntentosPorUsuario(idUsuario)
+        
+        if (intentos.isEmpty()) {
+            usuarioDao.actualizarRacha(idUsuario, 0)
+            return
+        }
+
+        val fechasUnicas = intentos
+            .map { intento ->
+                val calendar = java.util.Calendar.getInstance()
+                calendar.timeInMillis = intento.fechaIntento
+                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                calendar.set(java.util.Calendar.MINUTE, 0)
+                calendar.set(java.util.Calendar.SECOND, 0)
+                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                calendar.timeInMillis
+            }
+            .distinct()
+            .sortedDescending()
+
+        val hoy = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val ayer = hoy - (24 * 60 * 60 * 1000)
+
+        var racha = 0
+        
+        if (fechasUnicas.contains(hoy) || fechasUnicas.contains(ayer)) {
+            racha = 1
+            var fechaEsperada = if (fechasUnicas.contains(hoy)) ayer else hoy - (24 * 60 * 60 * 1000)
+            
+            for (fecha in fechasUnicas) {
+                if (fecha == fechaEsperada) {
+                    racha++
+                    fechaEsperada -= (24 * 60 * 60 * 1000)
+                } else if (fecha < fechaEsperada) {
+                    break
+                }
+            }
+        }
+
+        usuarioDao.actualizarRacha(idUsuario, racha)
+    }
+
     suspend fun marcarLogroComoNotificado(idUsuario: Int, logro: TipoLogro) {
         val entidadLN = EntidadLogroNotificado(
             idUsuario = idUsuario,
@@ -114,6 +190,7 @@ class RepositorioApp(
         return leccionDao.consultarLecciones()
     }
 
+
     suspend fun defaultLeccionesIncorporacion() {
         val leccionesExistentes = obtenerLecciones()
 
@@ -123,10 +200,10 @@ class RepositorioApp(
 
         if (yaExisteOnboarding) return
 
-        // LECCIÓN 1: Propósito de la aplicación
-        val leccionBienvenida = EntidadLeccion(
+        // LECCIÓN 1: Introducción a la Aplicación
+        val leccion1 = EntidadLeccion(
             uuidGlobal = UUID.randomUUID().toString(),
-            titulo = "Bienvenido a la App",
+            titulo = "Bienvenido a la Aplicación",
             tema = "Tutorial",
             autorOriginal = "Sistema",
             fechaCreacion = System.currentTimeMillis(),
@@ -135,66 +212,73 @@ class RepositorioApp(
             imagenUrl = null
         )
 
-        val idLeccion1 = leccionDao.insertarLeccion(leccionBienvenida).toInt()
+        val idLeccion1 = leccionDao.insertarLeccion(leccion1).toInt()
 
-        val tarjetasBienvenida = listOf(
+        val tarjetas1 = listOf(
             EntidadTarjeta(
                 idLeccion = idLeccion1,
                 ordenSecuencia = 1,
-                contenidoTexto = "¡Bienvenido! Esta app te ayudará a aprender sobre tecnología de forma sencilla.",
+                contenidoTexto = "Esta aplicación está diseñada para ayudarte a aprender de manera sencilla y efectiva, dividiendo el conocimiento en pequeñas lecciones que son fáciles de entender y recordar.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#4CAF50"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion1,
                 ordenSecuencia = 2,
-                contenidoTexto = "Podrás aprender con lecciones interactivas, crear tus propias lecciones y compartirlas con otros.",
+                contenidoTexto = "Aprende a tu ritmo: El contenido está organizado en lecciones cortas que no sobrecargan tu mente.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#2196F3"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion1,
                 ordenSecuencia = 3,
-                contenidoTexto = "Desliza hacia la izquierda para continuar aprendiendo sobre cómo usar la aplicación.",
+                contenidoTexto = "Funciona sin Internet: Puedes usar la aplicación completamente sin conexión, ideal para zonas rurales o con Internet limitado.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#FF9800"
+            ),
+            EntidadTarjeta(
+                idLeccion = idLeccion1,
+                ordenSecuencia = 4,
+                contenidoTexto = "Comparte conocimiento: Crea tus propias lecciones y compártelas con otros, incluso sin Internet.",
+                tipoFondo = "COLOR_SOLIDO",
+                dataFondo = "#9C27B0"
             )
         )
 
-        tarjetaDao.insertarTarjetas(tarjetasBienvenida)
+        tarjetaDao.insertarTarjetas(tarjetas1)
 
         val cuestionario1 = EntidadCuestionario(
             idLeccion = idLeccion1,
-            tituloQuiz = "Evaluación: Bienvenida"
+            tituloQuiz = "Evaluación: Introducción"
         )
         val idCuestionario1 = cuestionarioDao.insertarCuestionario(cuestionario1).toInt()
 
         val p1_1 = EntidadPregunta(
             idCuestionario = idCuestionario1,
-            enunciado = "¿Cuál es el propósito principal de esta aplicación?"
+            enunciado = "¿Cómo está organizado el contenido en esta aplicación?"
         )
         val idP1_1 = cuestionarioDao.insertarPregunta(p1_1).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "Jugar videojuegos", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "Aprender sobre tecnología de forma sencilla", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "Ver videos", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "En lecciones largas y complejas", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "En lecciones cortas y fáciles de entender", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP1_1, textoOpcion = "En videos largos", esCorrecta = false)
         ))
 
         val p1_2 = EntidadPregunta(
             idCuestionario = idCuestionario1,
-            enunciado = "¿Qué puedes hacer con esta aplicación?"
+            enunciado = "¿Necesitas Internet para usar la aplicación?"
         )
         val idP1_2 = cuestionarioDao.insertarPregunta(p1_2).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "Solo ver lecciones", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "Aprender, crear y compartir lecciones", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "Enviar mensajes", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "Sí, siempre", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "No, funciona completamente sin conexión", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP1_2, textoOpcion = "Solo para compartir", esCorrecta = false)
         ))
 
-        // LECCIÓN 2: Uso de lecciones
-        val leccionUso = EntidadLeccion(
+        // LECCIÓN 2: Sección Inicio
+        val leccion2 = EntidadLeccion(
             uuidGlobal = UUID.randomUUID().toString(),
-            titulo = "Cómo usar las Lecciones",
+            titulo = "Tu Panel de Progreso",
             tema = "Tutorial",
             autorOriginal = "Sistema",
             fechaCreacion = System.currentTimeMillis(),
@@ -203,77 +287,66 @@ class RepositorioApp(
             imagenUrl = null
         )
 
-        val idLeccion2 = leccionDao.insertarLeccion(leccionUso).toInt()
+        val idLeccion2 = leccionDao.insertarLeccion(leccion2).toInt()
 
-        val tarjetasUso = listOf(
+        val tarjetas2 = listOf(
             EntidadTarjeta(
                 idLeccion = idLeccion2,
                 ordenSecuencia = 1,
-                contenidoTexto = "En la pestaña 'Lecciones' encontrarás todas las lecciones disponibles.",
-                tipoFondo = "COLOR_SOLIDO",
-                dataFondo = "#9C27B0"
-            ),
-            EntidadTarjeta(
-                idLeccion = idLeccion2,
-                ordenSecuencia = 2,
-                contenidoTexto = "Toca una lección para ver sus tarjetas. Desliza para avanzar.",
+                contenidoTexto = "La sección Inicio es tu punto de partida. Aquí verás tu racha de aprendizaje ⚡, que muestra cuántos días consecutivos has completado lecciones.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#00BCD4"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion2,
+                ordenSecuencia = 2,
+                contenidoTexto = "Próximo Logro 🏆: Te muestra qué insignia puedes desbloquear próximamente con una barra de progreso. Hay 4 logros: Primer Paso, Aprendiz, Perfeccionista y Estudioso.",
+                tipoFondo = "COLOR_SOLIDO",
+                dataFondo = "#FF9800"
+            ),
+            EntidadTarjeta(
+                idLeccion = idLeccion2,
                 ordenSecuencia = 3,
-                contenidoTexto = "Al final de cada lección, podrás responder un cuestionario para practicar.",
+                contenidoTexto = "Tip del Día 💡: Cada día verás un consejo diferente que te enseña cómo obtener las insignias y te recuerda funciones útiles de la aplicación.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#4CAF50"
             )
         )
 
-        tarjetaDao.insertarTarjetas(tarjetasUso)
+        tarjetaDao.insertarTarjetas(tarjetas2)
 
         val cuestionario2 = EntidadCuestionario(
             idLeccion = idLeccion2,
-            tituloQuiz = "Evaluación: Uso de Lecciones"
+            tituloQuiz = "Evaluación: Panel de Inicio"
         )
         val idCuestionario2 = cuestionarioDao.insertarCuestionario(cuestionario2).toInt()
 
         val p2_1 = EntidadPregunta(
             idCuestionario = idCuestionario2,
-            enunciado = "¿Dónde encuentras todas las lecciones disponibles?"
+            enunciado = "¿Qué muestra la racha de aprendizaje?"
         )
         val idP2_1 = cuestionarioDao.insertarPregunta(p2_1).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "En la pestaña 'Inicio'", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "En la pestaña 'Lecciones'", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "En la pestaña 'Perfil'", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "Cuántas lecciones has completado en total", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "Cuántos días consecutivos has completado lecciones", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP2_1, textoOpcion = "Tu calificación promedio", esCorrecta = false)
         ))
 
         val p2_2 = EntidadPregunta(
             idCuestionario = idCuestionario2,
-            enunciado = "¿Cómo avanzas entre las tarjetas de una lección?"
+            enunciado = "¿Cuántos logros hay disponibles en la aplicación?"
         )
         val idP2_2 = cuestionarioDao.insertarPregunta(p2_2).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "Tocando un botón", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "Deslizando la pantalla", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "Sacudiendo el teléfono", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "2 logros", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "4 logros", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP2_2, textoOpcion = "10 logros", esCorrecta = false)
         ))
 
-        val p2_3 = EntidadPregunta(
-            idCuestionario = idCuestionario2,
-            enunciado = "¿Qué aparece al final de cada lección?"
-        )
-        val idP2_3 = cuestionarioDao.insertarPregunta(p2_3).toInt()
-        cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP2_3, textoOpcion = "Un video", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP2_3, textoOpcion = "Un cuestionario para practicar", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP2_3, textoOpcion = "Una imagen", esCorrecta = false)
-        ))
-
-        // LECCIÓN 3: Crear lecciones
-        val leccionCrear = EntidadLeccion(
+        // LECCIÓN 3: Sección Lecciones
+        val leccion3 = EntidadLeccion(
             uuidGlobal = UUID.randomUUID().toString(),
-            titulo = "Crea tus Lecciones",
+            titulo = "Aprende y Comparte",
             tema = "Tutorial",
             autorOriginal = "Sistema",
             fechaCreacion = System.currentTimeMillis(),
@@ -282,37 +355,44 @@ class RepositorioApp(
             imagenUrl = null
         )
 
-        val idLeccion3 = leccionDao.insertarLeccion(leccionCrear).toInt()
+        val idLeccion3 = leccionDao.insertarLeccion(leccion3).toInt()
 
-        val tarjetasCrear = listOf(
+        val tarjetas3 = listOf(
             EntidadTarjeta(
                 idLeccion = idLeccion3,
                 ordenSecuencia = 1,
-                contenidoTexto = "Puedes crear tus propias lecciones tocando el botón '+' en la pestaña Lecciones.",
+                contenidoTexto = "En la sección Lecciones puedes ver todas las lecciones disponibles. Toca una para estudiarla, lee las tarjetas y responde el cuestionario al final.",
                 tipoFondo = "COLOR_SOLIDO",
-                dataFondo = "#FF5722"
+                dataFondo = "#9C27B0"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion3,
                 ordenSecuencia = 2,
-                contenidoTexto = "Agrega un título, tema y crea tarjetas con el contenido que quieras enseñar.",
+                contenidoTexto = "Crear lecciones ✏️: Toca el botón '+' para crear tus propias lecciones. Agrega título, tema, tarjetas con texto e imágenes, y preguntas de opción múltiple.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#3F51B5"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion3,
                 ordenSecuencia = 3,
-                contenidoTexto = "También puedes agregar cuestionarios para que otros practiquen lo aprendido.",
+                contenidoTexto = "Compartir sin Internet 📤: Toca el botón de compartir en cualquier lección para enviarla a dispositivos cercanos sin necesidad de Internet usando Nearby.",
+                tipoFondo = "COLOR_SOLIDO",
+                dataFondo = "#E91E63"
+            ),
+            EntidadTarjeta(
+                idLeccion = idLeccion3,
+                ordenSecuencia = 4,
+                contenidoTexto = "Sistema de calificación: Necesitas 60% o más para aprobar. Puedes repetir las lecciones cuantas veces quieras y tu promedio se actualiza automáticamente.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#009688"
             )
         )
 
-        tarjetaDao.insertarTarjetas(tarjetasCrear)
+        tarjetaDao.insertarTarjetas(tarjetas3)
 
         val cuestionario3 = EntidadCuestionario(
             idLeccion = idLeccion3,
-            tituloQuiz = "Evaluación: Crear Lecciones"
+            tituloQuiz = "Evaluación: Sección Lecciones"
         )
         val idCuestionario3 = cuestionarioDao.insertarCuestionario(cuestionario3).toInt()
 
@@ -323,25 +403,36 @@ class RepositorioApp(
         val idP3_1 = cuestionarioDao.insertarPregunta(p3_1).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
             EntidadRespuesta(idPregunta = idP3_1, textoOpcion = "Tocando el botón '+' en Lecciones", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP3_1, textoOpcion = "En la pestaña Perfil", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP3_1, textoOpcion = "Descargándola de internet", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP3_1, textoOpcion = "En la sección Perfil", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP3_1, textoOpcion = "Descargándola de Internet", esCorrecta = false)
         ))
 
         val p3_2 = EntidadPregunta(
             idCuestionario = idCuestionario3,
-            enunciado = "¿Qué elementos puedes agregar a una lección?"
+            enunciado = "¿Qué porcentaje necesitas para aprobar una lección?"
         )
         val idP3_2 = cuestionarioDao.insertarPregunta(p3_2).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "Solo texto", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "Título, tema, tarjetas y cuestionarios", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "Solo imágenes", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "50%", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "60%", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP3_2, textoOpcion = "100%", esCorrecta = false)
         ))
 
-        // LECCIÓN 4: Compartir
-        val leccionCompartir = EntidadLeccion(
+        val p3_3 = EntidadPregunta(
+            idCuestionario = idCuestionario3,
+            enunciado = "¿Necesitas Internet para compartir lecciones?"
+        )
+        val idP3_3 = cuestionarioDao.insertarPregunta(p3_3).toInt()
+        cuestionarioDao.insertarRespuestas(listOf(
+            EntidadRespuesta(idPregunta = idP3_3, textoOpcion = "Sí, siempre", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP3_3, textoOpcion = "No, se comparten entre dispositivos cercanos", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP3_3, textoOpcion = "Solo con WiFi", esCorrecta = false)
+        ))
+
+        // LECCIÓN 4: Sección Perfil
+        val leccion4 = EntidadLeccion(
             uuidGlobal = UUID.randomUUID().toString(),
-            titulo = "Comparte Conocimiento",
+            titulo = "Gestiona tu Cuenta",
             tema = "Tutorial",
             autorOriginal = "Sistema",
             fechaCreacion = System.currentTimeMillis(),
@@ -350,67 +441,78 @@ class RepositorioApp(
             imagenUrl = null
         )
 
-        val idLeccion4 = leccionDao.insertarLeccion(leccionCompartir).toInt()
+        val idLeccion4 = leccionDao.insertarLeccion(leccion4).toInt()
 
-        val tarjetasCompartir = listOf(
+        val tarjetas4 = listOf(
             EntidadTarjeta(
                 idLeccion = idLeccion4,
                 ordenSecuencia = 1,
-                contenidoTexto = "Puedes compartir lecciones con otros dispositivos cercanos sin necesidad de internet.",
+                contenidoTexto = "En Perfil puedes ver tu información, promedio general y lecciones completadas. También puedes gestionar múltiples usuarios en el mismo dispositivo.",
                 tipoFondo = "COLOR_SOLIDO",
-                dataFondo = "#E91E63"
+                dataFondo = "#FF5722"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion4,
                 ordenSecuencia = 2,
-                contenidoTexto = "En cada lección, toca el botón 'Compartir' para enviarla a dispositivos cercanos.",
+                contenidoTexto = "Gestión de usuarios 👥: Crea nuevos perfiles, cambia entre usuarios, edita nombres (✏️) o elimina perfiles (🗑️). Ideal para familias o grupos de estudio.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#673AB7"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion4,
                 ordenSecuencia = 3,
-                contenidoTexto = "Importante: En dispositivos Android 9 o anteriores, debes activar la ubicación (GPS) para poder compartir.",
+                contenidoTexto = "Tus logros 🏆: Visualiza tus insignias desbloqueadas (en color) y bloqueadas (en gris). Toca una insignia para ver cómo desbloquearla.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#FF9800"
             ),
             EntidadTarjeta(
                 idLeccion = idLeccion4,
                 ordenSecuencia = 4,
-                contenidoTexto = "¡Listo! Ahora ya sabes cómo usar la aplicación. ¡Comienza a aprender!",
+                contenidoTexto = "Notificaciones 🔔: Programa recordatorios diarios para estudiar. Selecciona la hora que prefieres y la app te recordará cada día. Puedes desactivarlas cuando quieras.",
                 tipoFondo = "COLOR_SOLIDO",
                 dataFondo = "#4CAF50"
             )
         )
 
-        tarjetaDao.insertarTarjetas(tarjetasCompartir)
+        tarjetaDao.insertarTarjetas(tarjetas4)
 
         val cuestionario4 = EntidadCuestionario(
             idLeccion = idLeccion4,
-            tituloQuiz = "Evaluación: Compartir Lecciones"
+            tituloQuiz = "Evaluación: Sección Perfil"
         )
         val idCuestionario4 = cuestionarioDao.insertarCuestionario(cuestionario4).toInt()
 
         val p4_1 = EntidadPregunta(
             idCuestionario = idCuestionario4,
-            enunciado = "¿Necesitas internet para compartir lecciones?"
+            enunciado = "¿Puedes tener múltiples usuarios en el mismo dispositivo?"
         )
         val idP4_1 = cuestionarioDao.insertarPregunta(p4_1).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "Sí, siempre", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "No, se comparten entre dispositivos cercanos", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "Solo con WiFi", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "No, solo uno", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "Sí, puedes crear varios perfiles", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP4_1, textoOpcion = "Solo con Internet", esCorrecta = false)
         ))
 
         val p4_2 = EntidadPregunta(
             idCuestionario = idCuestionario4,
-            enunciado = "¿Dónde encuentras el botón para compartir una lección?"
+            enunciado = "¿Cómo se ven las insignias que aún no has desbloqueado?"
         )
         val idP4_2 = cuestionarioDao.insertarPregunta(p4_2).toInt()
         cuestionarioDao.insertarRespuestas(listOf(
-            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "En el perfil", esCorrecta = false),
-            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "En cada lección", esCorrecta = true),
-            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "En la configuración", esCorrecta = false)
+            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "En color", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "En gris", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP4_2, textoOpcion = "No se ven", esCorrecta = false)
+        ))
+
+        val p4_3 = EntidadPregunta(
+            idCuestionario = idCuestionario4,
+            enunciado = "¿Para qué sirven las notificaciones?"
+        )
+        val idP4_3 = cuestionarioDao.insertarPregunta(p4_3).toInt()
+        cuestionarioDao.insertarRespuestas(listOf(
+            EntidadRespuesta(idPregunta = idP4_3, textoOpcion = "Para recibir mensajes de otros usuarios", esCorrecta = false),
+            EntidadRespuesta(idPregunta = idP4_3, textoOpcion = "Para recordarte estudiar cada día", esCorrecta = true),
+            EntidadRespuesta(idPregunta = idP4_3, textoOpcion = "Para descargar lecciones", esCorrecta = false)
         ))
     }
 
@@ -537,12 +639,18 @@ class RepositorioApp(
         return intentoLeccionDao.obtenerLeccionesRealizadasPorUsuario(idUsuario)
     }
 
+    suspend fun obtenerIntentosPorUsuario(idUsuario: Int): List<EntidadIntentoLeccion> {
+        return intentoLeccionDao.obtenerIntentosPorUsuario(idUsuario)
+    }
+ 
+ 
     suspend fun obtenerEstadosLogros(idUsuario: Int): EstadoLogros {
         val intentos = intentoLeccionDao.obtenerIntentosPorUsuario(idUsuario)
+        val usuario = usuarioDao.obtenerUsuarioPorId(idUsuario)
 
         val cantidadLecciones = intentos.distinctBy { it.idLeccion }.size
-        //tiene 100 e algun intento?
         val tieneCien = intentos.any { it.calificacionObtenida == 100 }
+        val rachaActual = usuario?.rachaActualDias ?: 0
 
         val listaLogros = mutableListOf<TipoLogro>()
 
@@ -550,8 +658,13 @@ class RepositorioApp(
         if (intentos.isNotEmpty()) listaLogros.add(TipoLogro.PRIMER_CUESTIONARIO)
         if (tieneCien) listaLogros.add(TipoLogro.NOTA_PERFECTA)
         if (cantidadLecciones >= 5) listaLogros.add(TipoLogro.COMPLETISTA)
+        
+        if (rachaActual >= 1) listaLogros.add(TipoLogro.RACHA_1_DIA)
+        if (rachaActual >= 3) listaLogros.add(TipoLogro.RACHA_3_DIAS)
+        if (rachaActual >= 7) listaLogros.add(TipoLogro.RACHA_7_DIAS)
 
         return EstadoLogros(logrosDesbloqueados = listaLogros)
+
     }
 
     fun programarNotificacionDiaria(

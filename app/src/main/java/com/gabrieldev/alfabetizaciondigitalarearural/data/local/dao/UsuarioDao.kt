@@ -50,4 +50,13 @@ interface UsuarioDao {
 
     @Query("UPDATE usuarios SET ultima_actividad = :timestamp WHERE id_usuario = :idUsuario")
     suspend fun actualizarUltimaActividad(idUsuario: Int, timestamp: Long)
+
+    @Query("UPDATE usuarios SET alias = :nuevoAlias WHERE id_usuario = :idUsuario")
+    suspend fun actualizarAlias(idUsuario: Int, nuevoAlias: String)
+
+    @Query("DELETE FROM usuarios WHERE id_usuario = :idUsuario")
+    suspend fun eliminarUsuario(idUsuario: Int)
+
+    @Query("UPDATE usuarios SET racha_actual_dias = :dias WHERE id_usuario = :idUsuario")
+    suspend fun actualizarRacha(idUsuario: Int, dias: Int)
 }

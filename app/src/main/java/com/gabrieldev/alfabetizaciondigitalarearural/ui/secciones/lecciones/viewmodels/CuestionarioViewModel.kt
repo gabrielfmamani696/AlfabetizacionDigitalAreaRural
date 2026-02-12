@@ -92,6 +92,7 @@ class CuestionarioViewModel(
                     completadoExitosamente = aprobacion
                 )
                 repositorio.insertarIntento(intento)
+                repositorio.actualizarRachaUsuario(idUsuario)
 
                 _estadoCuestionario.value = EstadoCuestionario.Finalizado(calificacionFinal, aprobacion)
             }

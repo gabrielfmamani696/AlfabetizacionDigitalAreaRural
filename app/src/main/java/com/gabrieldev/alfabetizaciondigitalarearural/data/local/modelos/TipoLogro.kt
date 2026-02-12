@@ -33,7 +33,23 @@ enum class TipoLogro (
         nombreVisible = "Estudioso",
         descripcion = "Completa 5 lecciones distintas",
         icono = Icons.Default.LocalFireDepartment
+    ),
+    RACHA_1_DIA (
+        nombreVisible = "Constante",
+        descripcion = "Aprende 1 día seguido",
+        icono = Icons.Default.LocalFireDepartment
+    ),
+    RACHA_3_DIAS (
+        nombreVisible = "Comprometido",
+        descripcion = "Aprende 3 días seguidos",
+        icono = Icons.Default.LocalFireDepartment
+    ),
+    RACHA_7_DIAS (
+        nombreVisible = "Dedicado",
+        descripcion = "Aprende 7 días seguidos",
+        icono = Icons.Default.LocalFireDepartment
     )
+
 }
 
 data class EstadoLogros (

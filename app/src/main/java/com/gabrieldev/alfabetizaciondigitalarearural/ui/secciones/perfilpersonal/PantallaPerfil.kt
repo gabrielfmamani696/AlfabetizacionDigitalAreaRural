@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -85,6 +86,10 @@ fun PantallaPerfil(
     var mostrarDialogoCambiarPerfil by remember { mutableStateOf(false) }
     var mostrarDialogoCrearPerfil by remember { mutableStateOf(false) }
     var todosLosUsuarios by remember { mutableStateOf<List<EntidadUsuario>>(emptyList()) }
+    
+    // Estados para editar y eliminar
+    var usuarioAEditar by remember { mutableStateOf<EntidadUsuario?>(null) }
+    var usuarioAEliminar by remember { mutableStateOf<EntidadUsuario?>(null) }
 
     //corrutina
     val scope = rememberCoroutineScope()
@@ -200,6 +205,123 @@ fun PantallaPerfil(
                     repositorio.cambiarUsuarioActivo(usuarioSeleccionado.idUsuario)
                     mostrarDialogoCambiarPerfil = false
                 }
+            },
+            onEditar = { usuarioSeleccionado ->
+                usuarioAEditar = usuarioSeleccionado
+                mostrarDialogoCambiarPerfil = false
+            },
+            onEliminar = { usuarioSeleccionado ->
+                usuarioAEliminar = usuarioSeleccionado
+                mostrarDialogoCambiarPerfil = false
+            }
+        )
+    }
+    
+    // Diálogo para editar usuario
+    usuarioAEditar?.let { usuarioEditar ->
+        var nuevoAlias by remember { mutableStateOf(usuarioEditar.alias) }
+        var mensajeError by remember { mutableStateOf<String?>(null) }
+        
+        AlertDialog(
+            onDismissRequest = { usuarioAEditar = null },
+            title = { Text("Editar Perfil") },
+            text = {
+                Column {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = nuevoAlias,
+                        onValueChange = {
+                            nuevoAlias = it
+                            mensajeError = null
+                        },
+                        label = { Text("Nuevo nombre") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = mensajeError != null,
+                        supportingText = {
+                            if (mensajeError != null) {
+                                Text(
+                                    text = mensajeError!!,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Validación
+                        if (nuevoAlias.length < 4) {
+                            mensajeError = "El nombre debe tener al menos 4 caracteres."
+                            return@TextButton
+                        }
+                        
+                        if (!nuevoAlias.all { it.isLetterOrDigit() }) {
+                            mensajeError = "Solo se permiten letras y números."
+                            return@TextButton
+                        }
+                        
+                        scope.launch {
+                            repositorio.actualizarAliasUsuario(usuarioEditar.idUsuario, nuevoAlias)
+                            todosLosUsuarios = repositorio.obtenerTodosLosUsuarios()
+                            usuarioAEditar = null
+                        }
+                    }
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { usuarioAEditar = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+    
+    // Diálogo para confirmar eliminación
+    usuarioAEliminar?.let { usuarioEliminar ->
+        AlertDialog(
+            onDismissRequest = { usuarioAEliminar = null },
+            icon = {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("¿Eliminar perfil?") },
+            text = {
+                Text("¿Estás seguro de que deseas eliminar el perfil '${usuarioEliminar.alias}'? Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val eliminado = repositorio.eliminarUsuario(usuarioEliminar.idUsuario)
+                            if (eliminado) {
+                                todosLosUsuarios = repositorio.obtenerTodosLosUsuarios()
+                                usuarioAEliminar = null
+                            } else {
+                                // No se puede eliminar el último usuario
+                                Toast.makeText(
+                                    contexto,
+                                    "No puedes eliminar el último usuario",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                usuarioAEliminar = null
+                            }
+                        }
+                    }
+                ) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { usuarioAEliminar = null }) {
+                    Text("Cancelar")
+                }
             }
         )
     }
@@ -265,7 +387,7 @@ fun PantallaPerfil(
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Cambiar Perfil")
+                    Text("Cambiar, Editar ó Eliminar Perfil")
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

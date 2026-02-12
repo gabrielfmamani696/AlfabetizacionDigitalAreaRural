@@ -8,7 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -32,7 +37,9 @@ fun DialogoCambiarPerfil(
     usuarioActual: EntidadUsuario,
     todosLosUsuarios: List<EntidadUsuario>,
     onDismiss: () -> Unit,
-    onSeleccionar: (EntidadUsuario) -> Unit
+    onSeleccionar: (EntidadUsuario) -> Unit,
+    onEditar: (EntidadUsuario) -> Unit,
+    onEliminar: (EntidadUsuario) -> Unit
 ) {
     var usuarioSeleccionado by remember { mutableStateOf(usuarioActual) }
 
@@ -54,7 +61,9 @@ fun DialogoCambiarPerfil(
                             usuario = usuario,
                             esActual = usuario.idUsuario == usuarioActual.idUsuario,
                             seleccionado = usuario.idUsuario == usuarioSeleccionado.idUsuario,
-                            onClick = { usuarioSeleccionado = usuario }
+                            onClick = { usuarioSeleccionado = usuario },
+                            onEditar = { onEditar(usuario) },
+                            onEliminar = { onEliminar(usuario) }
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -88,7 +97,9 @@ fun ItemUsuario (
     usuario: EntidadUsuario,
     esActual: Boolean,
     seleccionado: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditar: () -> Unit,
+    onEliminar: () -> Unit
 ) {
     Row (
         modifier = Modifier
@@ -130,6 +141,22 @@ fun ItemUsuario (
                 text = formatearUltimaActividad(usuario.ultimaActividad),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        IconButton(onClick = onEditar) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Editar",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        IconButton(onClick = onEliminar) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Eliminar",
+                tint = MaterialTheme.colorScheme.error
             )
         }
     }

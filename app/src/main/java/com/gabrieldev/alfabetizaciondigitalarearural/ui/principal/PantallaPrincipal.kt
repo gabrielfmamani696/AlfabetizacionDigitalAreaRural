@@ -91,7 +91,10 @@ fun PantallaPrincipal(
                 startDestination = Rutas.Inicio.ruta
             ) {
                 composable(Rutas.Inicio.ruta) {
-                    PantallaSeccionInicio(usuario = usuario)
+                    PantallaSeccionInicio(
+                        usuario = usuario,
+                        repositorio = repositorio
+                    )
                 }
                 composable(Rutas.Lecciones.ruta) {
                     PantallaLecciones(
