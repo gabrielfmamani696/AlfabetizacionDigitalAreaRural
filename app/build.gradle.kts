@@ -11,13 +11,13 @@ plugins {
 }
 
 android {
-    namespace = "com.gabrieldev.alfabetizaciondigitalarearural"
+    namespace = "com.gabrieldev.aplicacionmovcomp"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.gabrieldev.alfabetizaciondigitalarearural"
+        applicationId = "com.gabrieldev.aplicacionmovcomp"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
