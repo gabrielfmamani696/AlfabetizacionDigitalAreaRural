@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "405747653306",
+    "project_id": "aplicacion-comp-lectora",
+    "storage_bucket": "aplicacion-comp-lectora.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:405747653306:android:829e13e25f3686162cc083",
+        "android_client_info": {
+          "package_name": "com.gabrieldev.aplicacionmovcomp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqZReynjUYC_4FLnb2OlbT77_j2k2pE2g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -332,7 +332,9 @@ fun PantallaPerfil(
             onDismiss = { mostrarDialogoCrearPerfil = false },
             onCrear = { nombre, cambiarANuevo ->
                 scope.launch {
-                    repositorio.crearUsuario(nombre)
+                    repositorio.crearUsuario(
+                        alias = nombre
+                    )
 
                     //recargar
                     todosLosUsuarios = repositorio.obtenerTodosLosUsuarios()

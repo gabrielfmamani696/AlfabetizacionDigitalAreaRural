@@ -20,7 +20,7 @@ interface CuestionarioDao {
     suspend fun insertarRespuesta(respuesta: EntidadRespuesta)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarRespuestas(respuestas: List<EntidadRespuesta>)
+    suspend fun insertarRespuestas(respuestas: List<EntidadRespuesta>): List<Long>
 
     @Query("SELECT * FROM cuestionarios WHERE id_leccion = :leccionId")
     suspend fun obtenerCuestionariosPorLeccion(leccionId: Int): List<EntidadCuestionario>

@@ -30,11 +30,10 @@ fun PantallaRegistroUsuario(
     repositorio: RepositorioApp,
     alTerminar: () -> Unit
 ) {
-    // Estado para guardar lo el alias del usuario
     var nombre by remember { mutableStateOf("") }
-    // Estado para mostrar errores de validación
     var mensajeError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -43,7 +42,7 @@ fun PantallaRegistroUsuario(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "¡Bienvenido a tu Aventura de Alfabetización Digital!",
+            text = "¡Bienvenido a tu Aventura, te convertiras en un periodista!",
             style = MaterialTheme.typography.headlineMedium
         )
         Text(
@@ -77,11 +76,11 @@ fun PantallaRegistroUsuario(
                     return@Button
                 }
                 if (!nombre.all { it.isLetterOrDigit() }) {
-                    mensajeError = "Solo se permiten letras y números (sin espacios ni símbolos)."
+                    mensajeError = "Solo se permiten letras y números."
                     return@Button
                 }
                 scope.launch {
-                    repositorio.crearUsuario(nombre)
+                    repositorio.crearUsuario(alias = nombre)
                     alTerminar() 
                 }
             },

@@ -59,4 +59,7 @@ interface UsuarioDao {
 
     @Query("UPDATE usuarios SET racha_actual_dias = :dias WHERE id_usuario = :idUsuario")
     suspend fun actualizarRacha(idUsuario: Int, dias: Int)
+
+    @androidx.room.Update
+    suspend fun actualizarUsuario(usuario: EntidadUsuario)
 }

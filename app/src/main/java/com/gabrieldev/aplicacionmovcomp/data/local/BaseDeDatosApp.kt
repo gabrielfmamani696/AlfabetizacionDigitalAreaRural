@@ -29,7 +29,7 @@ import com.gabrieldev.aplicacionmovcomp.data.local.entidades.EntidadUsuario
     EntidadRespuesta::class,
     EntidadLogroNotificado::class,
     ],
-    version = 5,
+    version = 7,
     exportSchema = false
 )
 abstract class BaseDeDatosApp : RoomDatabase() {

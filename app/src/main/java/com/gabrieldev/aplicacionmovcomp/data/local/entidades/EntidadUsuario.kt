@@ -36,4 +36,16 @@ data class EntidadUsuario(
 
     @ColumnInfo(name = "minuto_notificacion")
     val minutoNotificacion: Int = 0,
+
+    @ColumnInfo(name = "nombre")
+    val nombre: String = "",
+
+    @ColumnInfo(name = "apellido")
+    val apellido: String = "",
+
+    @ColumnInfo(name = "rol_docente")
+    val rolDocente: Boolean = false,
+
+    @ColumnInfo(name = "id_avatar")
+    val idAvatar: String = ""
 )

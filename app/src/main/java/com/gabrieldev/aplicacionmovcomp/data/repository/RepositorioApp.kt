@@ -20,6 +20,12 @@ import com.gabrieldev.aplicacionmovcomp.data.local.entidades.EntidadTarjeta
 import com.gabrieldev.aplicacionmovcomp.data.local.entidades.EntidadUsuario
 import com.gabrieldev.aplicacionmovcomp.data.local.modelos.EstadoLogros
 import com.gabrieldev.aplicacionmovcomp.data.local.modelos.TipoLogro
+import com.gabrieldev.aplicacionmovcomp.data.remote.FirestoreAvatarFuente
+import com.gabrieldev.aplicacionmovcomp.data.remote.FirestoreEspacioFuente
+import com.gabrieldev.aplicacionmovcomp.data.remote.FirestoreInsigniaFuente
+import com.gabrieldev.aplicacionmovcomp.data.remote.FirestoreLeccionFuente
+import com.gabrieldev.aplicacionmovcomp.data.remote.FirestoreUsuarioFuente
+import com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloUsuario
 import com.gabrieldev.aplicacionmovcomp.data.workers.NotificacionWorker
 import kotlinx.coroutines.flow.Flow
 import java.util.Calendar
@@ -34,29 +40,81 @@ class RepositorioApp(
     private val cuestionarioDao: CuestionarioDao,
     private val intentoLeccionDao: IntentoLeccionDao,
     private val logroNotificadoDao: LogroNotificadoDao,
+    // updt atributos, instancias de las fuentes
+    private val firestoreUsuario: FirestoreUsuarioFuente = FirestoreUsuarioFuente(),
+    private val firestoreLeccion: FirestoreLeccionFuente = FirestoreLeccionFuente(),
+    private val firestoreEspacio: FirestoreEspacioFuente = FirestoreEspacioFuente(),
+    private val firestoreInsignia: FirestoreInsigniaFuente = FirestoreInsigniaFuente(),
+    private val firestoreAvatar: FirestoreAvatarFuente = FirestoreAvatarFuente(),
+
     ) {
 
     // Obtener el usuario activo (para la pantalla principal)
     val usuarioActivo: Flow<EntidadUsuario?> = usuarioDao.obtenerUsuarioActivo()
 
     // Crear un nuevo usuario
-    suspend fun crearUsuario(nombre: String, avatarId: Int = 0) {
+    suspend fun crearUsuario(
+        alias: String,
+        nombre: String = "",
+        apellido: String = "",
+        rolDocente: Boolean = false,
+        avatarId: Int = 0
+    ) {
 
-        // Verificar si es el primer usuario
         val usuariosExistentes = usuarioDao.obtenerTodosLosUsuarios()
         val esPrimerUsuario = usuariosExistentes.isEmpty()
 
+        val uuid = UUID.randomUUID().toString()
+
         val nuevoUsuario = EntidadUsuario(
-            alias = nombre,
+            alias = alias,
+            nombre = nombre,
+            apellido = apellido,
+            rolDocente = rolDocente,
+            idAvatar = "",
             ultimaActividad = System.currentTimeMillis(),
-            uuidUsuario = UUID.randomUUID().toString(),
+            uuidUsuario = uuid,
             activo = esPrimerUsuario
         )
         usuarioDao.insertarUsuario(nuevoUsuario)
+
+        val modeloFirestore = ModeloUsuario(
+            alias = alias,
+            nombre = nombre,
+            apellido = apellido,
+            rolDocente = rolDocente,
+            idAvatar = "",
+            puntosTotales = 0,
+            rachaActualDias = 0,
+            ultimaActividad = System.currentTimeMillis()
+        )
+        try { firestoreUsuario.guardarUsuario(uuid, modeloFirestore) } catch (e: Exception) { }
     }
 
     suspend fun cambiarUsuarioActivo(idUsuario: Int) {
         usuarioDao.desactivarTodosLosUsuarios()
+        
+        // Sincronizar desde Firestore usando los datos alojados en la nube
+        val usuarioLocal = usuarioDao.obtenerUsuarioPorId(idUsuario)
+        usuarioLocal?.let { uLocal ->
+            try {
+                val fUser = firestoreUsuario.obtenerUsuario(uLocal.uuidUsuario)
+                if (fUser != null) {
+                    val syncUser = uLocal.copy(
+                        alias = fUser.alias,
+                        nombre = fUser.nombre,
+                        apellido = fUser.apellido,
+                        rolDocente = fUser.rolDocente,
+                        puntosTotales = fUser.puntosTotales,
+                        rachaActualDias = fUser.rachaActualDias,
+                        ultimaActividad = fUser.ultimaActividad,
+                        idAvatar = fUser.idAvatar
+                    )
+                    usuarioDao.actualizarUsuario(syncUser)
+                }
+            } catch (e: Exception) { /* Ignorar si no hay conexión o falla la nube, se usan los datos locales seguros */ }
+        }
+
         usuarioDao.activarUsuario(idUsuario)
     }
 
@@ -75,6 +133,14 @@ class RepositorioApp(
 
     suspend fun actualizarAliasUsuario(idUsuario: Int, nuevoAlias: String) {
         usuarioDao.actualizarAlias(idUsuario, nuevoAlias)
+        
+        // Sincronizar hacia Firestore
+        val usuarioLocal = usuarioDao.obtenerUsuarioPorId(idUsuario)
+        usuarioLocal?.let {
+            try {
+                firestoreUsuario.actualizarAlias(it.uuidUsuario, nuevoAlias)
+            } catch (e: Exception) { /* Ignorar si no hay conexión, Room ya está guardado */ }
+        }
     }
 
     suspend fun eliminarUsuario(idUsuario: Int): Boolean {
@@ -87,6 +153,13 @@ class RepositorioApp(
 
         val usuarioAEliminar = todosLosUsuarios.find { it.idUsuario == idUsuario }
         
+        // Sincronizar hacia Firestore la eliminación
+        usuarioAEliminar?.let {
+            try {
+                firestoreUsuario.eliminarUsuario(it.uuidUsuario)
+            } catch (e: Exception) { /* Ignorar si no hay conexión, se destruirá localmente */ }
+        }
+
         // Si el usuario a eliminar es el activo, activar otro
         if (usuarioAEliminar?.activo == true) {
             val otroUsuario = todosLosUsuarios.find { it.idUsuario != idUsuario }
@@ -110,22 +183,22 @@ class RepositorioApp(
 
         val fechasUnicas = intentos
             .map { intento ->
-                val calendar = java.util.Calendar.getInstance()
+                val calendar = Calendar.getInstance()
                 calendar.timeInMillis = intento.fechaIntento
-                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                calendar.set(java.util.Calendar.MINUTE, 0)
-                calendar.set(java.util.Calendar.SECOND, 0)
-                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
                 calendar.timeInMillis
             }
             .distinct()
             .sortedDescending()
 
-        val hoy = java.util.Calendar.getInstance().apply {
-            set(java.util.Calendar.HOUR_OF_DAY, 0)
-            set(java.util.Calendar.MINUTE, 0)
-            set(java.util.Calendar.SECOND, 0)
-            set(java.util.Calendar.MILLISECOND, 0)
+        val hoy = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }.timeInMillis
 
         val ayer = hoy - (24 * 60 * 60 * 1000)
@@ -147,6 +220,19 @@ class RepositorioApp(
         }
 
         usuarioDao.actualizarRacha(idUsuario, racha)
+
+        // Sincronizar hacia Firestore el progreso
+        try {
+            val fUser = firestoreUsuario.obtenerUsuario(usuario.uuidUsuario)
+            if (fUser != null) {
+                firestoreUsuario.actualizarProgreso(
+                    uuidUsuario = usuario.uuidUsuario,
+                    puntosTotales = fUser.puntosTotales, // Mantener los actuales en la nube
+                    rachaDias = racha,
+                    ultimaActividad = System.currentTimeMillis()
+                )
+            }
+        } catch (e: Exception) { /* Ignorar si no hay conexión */ }
     }
 
     suspend fun marcarLogroComoNotificado(idUsuario: Int, logro: TipoLogro) {
@@ -155,6 +241,14 @@ class RepositorioApp(
             tipoLogro = logro.name
         )
         logroNotificadoDao.marcarComoNotificado(entidadLN)
+
+        // Sincronizar hacia Firestore el logro
+        val usuarioLocal = usuarioDao.obtenerUsuarioPorId(idUsuario)
+        usuarioLocal?.let {
+            try {
+                firestoreUsuario.guardarLogroNotificado(it.uuidUsuario, logro.name, System.currentTimeMillis())
+            } catch (e: Exception) { /* Ignorar si no hay conexión */ }
+        }
     }
 
     suspend fun obtenerLogrosNuevos(idUsuario: Int): List<TipoLogro> {
@@ -170,16 +264,25 @@ class RepositorioApp(
         val tiempoInactivo = System.currentTimeMillis() - usuario.ultimaActividad
         return tiempoInactivo > (dias * milisegundosPorDia)
     }
-    /**
-     * Actualiza la última actividad del usuario al momento actual.
-     * Llamar cada vez que el usuario interactúe con la app.
-     */
     suspend fun actualizarUltimaActividad(idUsuario: Int) {
-        // Necesitarás agregar esta query en UsuarioDao:
-        // @Query("UPDATE usuarios SET ultima_actividad = :timestamp WHERE id_usuario = :idUsuario")
-        // suspend fun actualizarUltimaActividad(idUsuario: Int, timestamp: Long)
+        val timestamp = System.currentTimeMillis()
+        usuarioDao.actualizarUltimaActividad(idUsuario, timestamp)
 
-        usuarioDao.actualizarUltimaActividad(idUsuario, System.currentTimeMillis())
+        // Sincronizar hacia Firestore
+        val usuarioLocal = usuarioDao.obtenerUsuarioPorId(idUsuario)
+        usuarioLocal?.let {
+            try {
+                val fUser = firestoreUsuario.obtenerUsuario(it.uuidUsuario)
+                if (fUser != null) {
+                    firestoreUsuario.actualizarProgreso(
+                        uuidUsuario = it.uuidUsuario,
+                        puntosTotales = fUser.puntosTotales,
+                        rachaDias = it.rachaActualDias,
+                        ultimaActividad = timestamp
+                    )
+                }
+            } catch (e: Exception) { /* Ignorar si no hay conexión */ }
+        }
     }
 
     suspend fun existeAlgunUsuario(): Boolean {
@@ -540,11 +643,46 @@ class RepositorioApp(
     }
 
     suspend fun insertarLeccion(leccion: EntidadLeccion): Long {
-        return leccionDao.insertarLeccion(leccion)
+        val id = leccionDao.insertarLeccion(leccion)
+        
+        // Sincronizar Leccion a Firestore
+        try {
+            val modeloLeccion = com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloLeccion(
+                titulo = leccion.titulo,
+                tema = leccion.tema,
+                descripcion = leccion.descripcion,
+                nivelRequerido = leccion.nivelRequerido,
+                idEspacio = leccion.idEspacio ?: "",
+                uuidCreador = leccion.uuidCreador,
+                fechaCreacion = leccion.fechaCreacion,
+                creadaPorUsuario = leccion.creadaPorUsuario,
+                uuidAutorOriginal = leccion.uuidAutorOriginal,
+                imagenUrl = leccion.imagenUrl ?: ""
+            )
+            firestoreLeccion.guardarLeccion(leccion.uuidGlobal, modeloLeccion)
+        } catch (e: Exception) { /* Ignorar error offline */ }
+        
+        return id
     }
 
     suspend fun insertarTarjeta(tarjeta: EntidadTarjeta): Long {
-        return tarjetaDao.insertarTarjeta(tarjeta);
+        val id = tarjetaDao.insertarTarjeta(tarjeta)
+        
+        // Sincronizar Tarjeta a Firestore
+        try {
+            val leccion = leccionDao.obtenerLeccionPorId(tarjeta.idLeccion)
+            leccion?.let {
+                val modeloTarjeta = com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloTarjeta(
+                    ordenSecuencia = tarjeta.ordenSecuencia,
+                    contenidoTexto = tarjeta.contenidoTexto,
+                    tipoFondo = tarjeta.tipoFondo,
+                    dataFondo = tarjeta.dataFondo ?: ""
+                )
+                firestoreLeccion.guardarTarjeta(it.uuidGlobal, id.toString(), modeloTarjeta)
+            }
+        } catch (e: Exception) { /* Ignorar offline */ }
+        
+        return id
     }
 
     suspend fun insertarCuestionarioCompleto(
@@ -553,13 +691,48 @@ class RepositorioApp(
     ) {
         val idCuestionario = cuestionarioDao.insertarCuestionario(cuestionario).toInt()
 
+        // Sincronizar Cuestionario a Firestore (Subcolección 1)
+        val leccion = leccionDao.obtenerLeccionPorId(cuestionario.idLeccion)
+
+        leccion?.let { l ->
+            try {
+                val modeloCuestionario = com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloCuestionario(
+                    tituloQuiz = cuestionario.tituloQuiz
+                )
+                firestoreLeccion.guardarCuestionario(l.uuidGlobal, idCuestionario.toString(), modeloCuestionario)
+            } catch (e: Exception) { /* Ignorar error offline */ }
+        }
+
         preguntas.forEach { p ->
             // Vinculamos la pregunta al cuestionario creado
             val preguntaParaInsertar = p.pregunta.copy(idCuestionario = idCuestionario)
             val idPregunta = cuestionarioDao.insertarPregunta(preguntaParaInsertar).toInt()
 
+            leccion?.let { l ->
+                try {
+                    val modeloPregunta = com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloPregunta(
+                        enunciado = p.pregunta.enunciado
+                    )
+                    firestoreLeccion.guardarPregunta(l.uuidGlobal, idCuestionario.toString(), idPregunta.toString(), modeloPregunta)
+                } catch (e: Exception) {}
+            }
+
             val respuestasParaInsertar = p.respuestas.map { it.copy(idPregunta = idPregunta) }
-            cuestionarioDao.insertarRespuestas(respuestasParaInsertar)
+            val idsRespuestas = cuestionarioDao.insertarRespuestas(respuestasParaInsertar)
+            
+            // Sincronizar Respuestas
+            leccion?.let { l ->
+                respuestasParaInsertar.forEachIndexed { indice, r ->
+                    try {
+                        val idRespuestaLocal = idsRespuestas[indice].toString()
+                        val modeloRespuesta = com.gabrieldev.aplicacionmovcomp.data.remote.modelos.ModeloRespuesta(
+                            textoOpcion = r.textoOpcion,
+                            esCorrecta = r.esCorrecta
+                        )
+                        firestoreLeccion.guardarRespuesta(l.uuidGlobal, idCuestionario.toString(), idPregunta.toString(), idRespuestaLocal, modeloRespuesta)
+                    } catch (e: Exception) {}
+                }
+            }
         }
     }
 
@@ -628,7 +801,14 @@ class RepositorioApp(
     }
 
     suspend fun eliminarLeccionPorId(id: Int) {
+        val leccion = leccionDao.obtenerLeccionPorId(id)
         leccionDao.eliminarLeccionPorId(id)
+        
+        leccion?.let {
+            try {
+                firestoreLeccion.eliminarLeccion(it.uuidGlobal)
+            } catch (e: Exception) { /* Ignorar offline */ }
+        }
     }
 
     suspend fun obtenerPromedioDeLeccion(idUsuario: Int, idLeccion: Int): Double {

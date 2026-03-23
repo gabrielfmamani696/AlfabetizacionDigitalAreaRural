@@ -26,12 +26,8 @@ fun DialogoCrearPerfil(
     onDismiss: () -> Unit,
     onCrear: (nombre: String, cambiarANuevo: Boolean) -> Unit
 ) {
-
-    //estado de alias
-    var alias by remember { mutableStateOf("") }
-
+    var nombre by remember { mutableStateOf("") }
     var cambiarANuevo by remember { mutableStateOf(true) }
-
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -40,13 +36,13 @@ fun DialogoCrearPerfil(
         text = {
             Column {
                 OutlinedTextField(
-                    value = alias,
+                    value = nombre,
                     onValueChange = {
-                        alias = it
+                        nombre = it
                         mensajeError = null
                     },
-                    label = { Text("Alias nuevo") },
-                    placeholder = { Text("Ingresa tu nombre") },
+                    label = { Text("Nombre del perfil") },
+                    placeholder = { Text("Ej. Juan") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     isError = mensajeError != null,
@@ -81,17 +77,17 @@ fun DialogoCrearPerfil(
             TextButton(
                 onClick = {
                     // Validación
-                    if (alias.length < 4) {
+                    if (nombre.length < 4) {
                         mensajeError = "El nombre debe tener al menos 4 caracteres."
                         return@TextButton
                     }
 
-                    if (!alias.all { it.isLetterOrDigit() }) {
-                        mensajeError = "Solo se permiten letras y números (sin espacios ni símbolos)."
+                    if (!nombre.all { it.isLetterOrDigit() }) {
+                        mensajeError = "Solo se permiten letras y números."
                         return@TextButton
                     }
 
-                    onCrear(alias, cambiarANuevo)
+                    onCrear(nombre, cambiarANuevo)
                 }
             ) {
                 Text("Crear")

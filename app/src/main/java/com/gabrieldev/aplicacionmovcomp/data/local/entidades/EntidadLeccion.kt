@@ -17,6 +17,18 @@ data class EntidadLeccion(
 
     val tema: String,
 
+    @ColumnInfo(name = "descripcion")
+    val descripcion: String = "",
+
+    @ColumnInfo(name = "nivel_requerido")
+    val nivelRequerido: Int = 0,
+
+    @ColumnInfo(name = "id_espacio")
+    val idEspacio: String = "",
+
+    @ColumnInfo(name = "uuid_creador")
+    val uuidCreador: String = "",
+
     @ColumnInfo(name = "autor_original")
     val autorOriginal: String,
 
