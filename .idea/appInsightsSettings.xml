@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.gabrieldev.aplicacionmovcomp" />
+                  <option name="mobileSdkAppId" value="1:405747653306:android:829e13e25f3686162cc083" />
+                  <option name="projectId" value="aplicacion-comp-lectora" />
+                  <option name="projectNumber" value="405747653306" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
